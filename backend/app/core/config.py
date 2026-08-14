@@ -1,5 +1,6 @@
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional, List, Union
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 ROOT_DIR = Path(__file__).resolve().parents[3]
@@ -7,7 +8,7 @@ ROOT_DIR = Path(__file__).resolve().parents[3]
 
 class Settings(BaseSettings):
     # Server
-    HOST: str = "127.0.0.1"
+    HOST: str = "0.0.0.0"
     PORT: int = 8000
     ENVIRONMENT: str = "development"
     DEBUG: bool = True
@@ -22,7 +23,7 @@ class Settings(BaseSettings):
     JWT_AUDIENCE: str = "company-brain-api"
     ADMIN_BOOTSTRAP_EMAIL: str = "admin@companybrain.local"
     ADMIN_BOOTSTRAP_PASSWORD: str = "admin1234"
-    CORS_ALLOWED_ORIGINS: List[str] = ["*"]
+    CORS_ALLOWED_ORIGINS: Union[List[str], str] = ["*"]
 
     # Layer 4: Ingestion Connectors & Webhooks
     LAYER4_BASE_URL: str = "http://localhost:3000"
@@ -38,11 +39,9 @@ class Settings(BaseSettings):
     NEO4J_USER: str = "neo4j"
     NEO4J_PASSWORD: str = "companybrain123"
 
-    # Layer 2: Intelligence Core (Optional Live LLM Providers)
-    OPENAI_API_KEY: Optional[str] = None
+    # Layer 2: Intelligence Core (Google Gemini Live LLM)
     GEMINI_API_KEY: Optional[str] = None
-    ANTHROPIC_API_KEY: Optional[str] = None
-    LLM_MODEL: str = "gpt-4o-mini"
+    LLM_MODEL: str = "gemini-2.5-flash"
     EMBEDDING_MODEL: str = "text-embedding-3-small"
 
     # Layer 0: Execution Connectors
@@ -53,6 +52,22 @@ class Settings(BaseSettings):
     JIRA_API_TOKEN: Optional[str] = None
     JIRA_USER_EMAIL: Optional[str] = None
 
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
+    def assemble_db_connection(cls, v: Optional[str]) -> str:
+        if isinstance(v, str) and v.startswith("postgres://"):
+            return v.replace("postgres://", "postgresql://", 1)
+        return v or f"sqlite:///{ROOT_DIR / 'company_brain.db'}"
+
+    @field_validator("CORS_ALLOWED_ORIGINS", mode="before")
+    @classmethod
+    def assemble_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:
+        if isinstance(v, str) and not v.startswith("["):
+            return [i.strip() for i in v.split(",") if i.strip()]
+        elif isinstance(v, list):
+            return v
+        return ["*"]
+
     model_config = SettingsConfigDict(
         env_file=str(ROOT_DIR / ".env"),
         env_file_encoding="utf-8",
@@ -61,3 +76,4 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+

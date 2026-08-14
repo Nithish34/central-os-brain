@@ -1,13 +1,12 @@
 version: '3.8'
 
 services:
-  # Main Application (FastAPI Backend + Vite Frontend)
   app:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: company-brain-app
-    restart: unless-stopped
+    restart: always
     ports:
       - "8000:8000"
     environment:
@@ -16,14 +15,14 @@ services:
       - ENVIRONMENT=production
       - DEBUG=False
       - APP_NAME=Company Brain OS
-      - DATABASE_URL=postgresql://postgres:postgrespassword@postgres:5432/company_brain
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgrespassword}@postgres:5432/${POSTGRES_DB:-company_brain}
       - REDIS_URL=redis://redis:6379/0
       - NEO4J_URI=bolt://neo4j:7687
       - NEO4J_USER=neo4j
-      - NEO4J_PASSWORD=companybrain123
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD:-companybrain123}
       - JWT_SECRET=${JWT_SECRET:-company-brain-secret-key-change-in-production-2026}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - CORS_ALLOWED_ORIGINS=*
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-*}
     depends_on:
       postgres:
         condition: service_healthy
@@ -33,12 +32,16 @@ services:
         condition: service_started
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8000/api/v1/health || exit 1"]
-      interval: 15s
+      interval: 20s
       timeout: 5s
       retries: 5
-      start_period: 15s
+      start_period: 20s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
 
-  # Layer 1: Relational & Vector Storage (PostgreSQL 16 + pgvector)
   postgres:
     image: pgvector/pgvector:pg16
     container_name: company-brain-postgres
@@ -50,48 +53,60 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_prod_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d company_brain"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-company_brain}"]
       interval: 5s
       timeout: 5s
       retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
-  # Layer 1: Knowledge Graph Database (Neo4j)
   neo4j:
     image: neo4j:5.18-community
     container_name: company-brain-neo4j
     restart: always
     environment:
-      NEO4J_AUTH: ${NEO4J_AUTH:-neo4j/companybrain123}
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-companybrain123}
       NEO4J_PLUGINS: '["apoc"]'
       NEO4J_dbms_memory_pagecache_size: 512M
       NEO4J_dbms_memory_heap_initial__size: 512M
       NEO4J_dbms_memory_heap_max__size: 1G
     ports:
-      - "7474:7474" # Neo4j HTTP Browser
-      - "7687:7687" # Bolt Protocol
+      - "7474:7474"
+      - "7687:7687"
     volumes:
-      - neo4j_data:/data
+      - neo4j_prod_data:/data
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
-  # Layer 1 & 3: Ingestion Stream & Cache (Redis 7)
   redis:
     image: redis:7.2-alpine
     container_name: company-brain-redis
     restart: always
-    command: redis-server --appendonly yes
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-""}
     ports:
       - "6379:6379"
     volumes:
-      - redis_data:/data
+      - redis_prod_data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 5s
       retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
-  postgres_data:
-  neo4j_data:
-  redis_data:
-
+  postgres_prod_data:
+  neo4j_prod_data:
+  redis_prod_data:

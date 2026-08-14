@@ -21,7 +21,7 @@ def load_json(name: str):
 
 
 def reset_and_seed_db(db: Session):
-    # Clear all tables
+    # Clear all tables in reverse dependency order
     db.query(WorkflowAction).delete()
     db.query(AuditLog).delete()
     db.query(Conflict).delete()
@@ -31,7 +31,7 @@ def reset_and_seed_db(db: Session):
     db.query(AgentProfile).delete()
     db.commit()
 
-    # Seed Documents
+    # 1. Seed Documents first
     docs_data = load_json("documents.json")
     for d in docs_data:
         doc = Document(
@@ -53,19 +53,23 @@ def reset_and_seed_db(db: Session):
         )
         doc.tags = d.get("tags", [])
         db.add(doc)
+    db.commit()
 
-        # Generate sample chunks
-        for i in range(doc.chunk_count):
+    # 2. Seed Document Chunks
+    for d in docs_data:
+        chunk_count = d.get("chunk_count", 4)
+        for i in range(chunk_count):
             chunk = DocumentChunk(
-                id=f"chunk-{doc.id}-{i}",
-                document_id=doc.id,
+                id=f"chunk-{d['id']}-{i}",
+                document_id=d["id"],
                 chunk_index=i,
-                content=f"Chunk {i+1} content for {doc.title}...",
+                content=f"Chunk {i+1} content for {d['title']}...",
                 token_count=128,
             )
             db.add(chunk)
+    db.commit()
 
-    # Seed Events
+    # 3. Seed Events
     events_data = load_json("events.json")
     for e in events_data:
         evt = CompanyEvent(
@@ -86,8 +90,9 @@ def reset_and_seed_db(db: Session):
         )
         evt.tags = e.get("tags", [])
         db.add(evt)
+    db.commit()
 
-    # Seed Conflicts
+    # 4. Seed Conflicts (depends on Documents)
     conflicts_data = load_json("conflicts.json")
     for c in conflicts_data:
         conf = Conflict(
@@ -112,8 +117,9 @@ def reset_and_seed_db(db: Session):
         conf.evidence_ids = c.get("evidence_ids", [])
         conf.approval_matrix = c.get("approval_matrix", {})
         db.add(conf)
+    db.commit()
 
-    # Seed Agents
+    # 5. Seed Agents
     agents_data = load_json("agents.json")
     for a in agents_data:
         agent = AgentProfile(
@@ -130,7 +136,6 @@ def reset_and_seed_db(db: Session):
         )
         agent.detected_conflict_ids = a.get("detected_conflict_ids", [])
         db.add(agent)
-
     db.commit()
 
 
@@ -138,3 +143,4 @@ def reset_and_seed_db(db: Session):
 def reset_demo(db: Session = Depends(get_db)):
     reset_and_seed_db(db)
     return {"ok": True, "message": "Prototype state successfully reset to initial baseline"}
+

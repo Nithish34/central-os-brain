@@ -1018,41 +1018,34 @@ async def chat_stream_endpoint(req: ChatRequest, db: Session = Depends(get_db)):
 def get_supported_models():
     """Returns available LLM providers and currently active configuration status."""
     return {
-        "active_default": "gemini-1.5-flash" if settings.GEMINI_API_KEY else ("gpt-4o-mini" if settings.OPENAI_API_KEY else "cognitive-nlp-engine"),
+        "active_default": settings.LLM_MODEL if settings.GEMINI_API_KEY else "cognitive-nlp-engine",
         "has_gemini_key": bool(settings.GEMINI_API_KEY),
-        "has_openai_key": bool(settings.OPENAI_API_KEY),
-        "has_anthropic_key": bool(settings.ANTHROPIC_API_KEY),
         "models": [
+            {
+                "id": "gemini-2.5-flash",
+                "name": "Google Gemini 2.5 Flash (Active)",
+                "provider": "gemini",
+                "status": "ready" if settings.GEMINI_API_KEY else "needs_key",
+                "description": "High-performance multimodal reasoning with real-time enterprise grounding."
+            },
+            {
+                "id": "gemini-2.5-pro",
+                "name": "Google Gemini 2.5 Pro",
+                "provider": "gemini",
+                "status": "ready" if settings.GEMINI_API_KEY else "needs_key",
+                "description": "Advanced analytical and multi-step causal reasoning."
+            },
             {
                 "id": "cognitive",
                 "name": "Cognitive NLP Reasoner (Built-in / Zero-Key)",
                 "provider": "builtin",
                 "status": "ready",
                 "description": "Full semantic parsing, causal analysis, comparisons, and action orchestration without external APIs."
-            },
-            {
-                "id": "gemini-1.5-flash",
-                "name": "Google Gemini 1.5 Flash",
-                "provider": "gemini",
-                "status": "ready" if settings.GEMINI_API_KEY else "needs_key",
-                "description": "Ultra-fast multimodal reasoning with live system state grounding."
-            },
-            {
-                "id": "gpt-4o-mini",
-                "name": "OpenAI GPT-4o Mini",
-                "provider": "openai",
-                "status": "ready" if settings.OPENAI_API_KEY else "needs_key",
-                "description": "High-intelligence conversational reasoner with autonomous tool calling."
-            },
-            {
-                "id": "claude-3-5-sonnet",
-                "name": "Anthropic Claude 3.5 Sonnet",
-                "provider": "anthropic",
-                "status": "ready" if settings.ANTHROPIC_API_KEY else "needs_key",
-                "description": "Advanced nuanced synthesis and deep codebase & policy reasoning."
             }
         ]
     }
+
+
 
 
 @router.post("/sessions/new", summary="Create a new conversation session")

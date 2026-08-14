@@ -1,0 +1,50 @@
+# ==============================================================================
+# Render Blueprint Specification for Company Brain OS
+# Docs: https://render.com/docs/blueprint-spec
+# ==============================================================================
+services:
+  # Main Full-Stack Web Service (FastAPI + Embedded React Frontend)
+  - type: web
+    name: company-brain-os
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: standard
+    region: oregon
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: false
+      - key: APP_NAME
+        value: "Company Brain OS"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: company-brain-postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: company-brain-redis
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: GEMINI_API_KEY
+        sync: false # Set in Render Dashboard secrets
+      - key: CORS_ALLOWED_ORIGINS
+        value: "*"
+
+  # Managed Redis Cache / Event Bus
+  - type: redis
+    name: company-brain-redis
+    plan: free
+    region: oregon
+    maxmemoryPolicy: allkeys-lru
+
+databases:
+  # Managed PostgreSQL with pgvector support
+  - name: company-brain-postgres
+    plan: free
+    region: oregon
+    databaseName: company_brain
+    user: postgres

@@ -14,7 +14,8 @@ def test_chat_e2e():
     assert res.status_code == 200, f"Expected 200, got {res.status_code}"
     models_data = res.json()
     print(f"Active default model: {models_data.get('active_default')}")
-    assert len(models_data.get("models", [])) >= 4
+    assert len(models_data.get("models", [])) >= 2
+
 
     print("\n--- 2. Testing POST /api/v1/chat (Standard endpoint with RAG citations) ---")
     chat_payload = {

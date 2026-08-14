@@ -7,3 +7,8 @@ dist/
 build/
 .next/
 .DS_Store
+*.db
+*.sqlite
+*.sqlite3
+.cache/
+

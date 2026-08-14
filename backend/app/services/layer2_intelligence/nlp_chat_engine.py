@@ -127,46 +127,25 @@ Current Time: {now}
     ) -> Tuple[str, str, List[Dict[str, Any]]]:
         """
         Main entry point for conversational NLP.
-        Attempts Live LLM if key is available, else falls back to Cognitive Reasoner.
-        Returns (reply_text, engine_used, citations).
+        Exclusively routes to Google Gemini API (with live state grounding),
+        and falls back gracefully to built-in Cognitive Reasoner when offline or on API errors.
         """
         history = history or []
-        provider = provider or "auto"
         system_ctx, citations = cls.build_system_context(db, query=message)
 
-        # Check for configured LLM keys
-        gemini_key = api_key if provider == "gemini" else (settings.GEMINI_API_KEY or api_key)
-        openai_key = api_key if provider == "openai" else (settings.OPENAI_API_KEY or api_key)
-        anthropic_key = api_key if provider == "anthropic" else (settings.ANTHROPIC_API_KEY or api_key)
+        gemini_key = api_key or settings.GEMINI_API_KEY
+        target_model = model or settings.LLM_MODEL or "gemini-2.0-flash"
 
-        # 1. Try Google Gemini API if key is present
+        # 1. Primary: Google Gemini Live Intelligence
         if gemini_key:
             try:
-                reply = await cls._call_gemini(message, system_ctx, db, history, gemini_key, model or "gemini-1.5-flash")
+                reply = await cls._call_gemini(message, system_ctx, db, history, gemini_key, target_model)
                 if reply:
-                    return reply, "gemini-1.5-flash", citations
+                    return reply, target_model, citations
             except Exception as e:
-                print(f"[NLPChatEngine] Gemini error: {e}, falling back to cognitive reasoner.")
+                print(f"[NLPChatEngine] Google Gemini API ({target_model}): {e}, switching to Cognitive NLP Engine.")
 
-        # 2. Try OpenAI API if key is present
-        if openai_key:
-            try:
-                reply = await cls._call_openai(message, system_ctx, db, history, openai_key, model or settings.LLM_MODEL or "gpt-4o-mini")
-                if reply:
-                    return reply, "gpt-4o-mini", citations
-            except Exception as e:
-                print(f"[NLPChatEngine] OpenAI error: {e}, falling back to cognitive reasoner.")
-
-        # 3. Try Anthropic API if key is present
-        if anthropic_key:
-            try:
-                reply = await cls._call_anthropic(message, system_ctx, db, history, anthropic_key, model or "claude-3-5-sonnet-20241022")
-                if reply:
-                    return reply, "claude-3-5-sonnet", citations
-            except Exception as e:
-                print(f"[NLPChatEngine] Anthropic error: {e}, falling back to cognitive reasoner.")
-
-        # 4. Built-in Cognitive Reasoner (Universal Zero-Key NLP)
+        # 2. Built-in Cognitive Reasoner (Universal Zero-Key NLP Fallback)
         reply = cls.cognitive_reasoning_pipeline(message, db, history)
         return reply, "cognitive-nlp-engine", citations
 
@@ -184,14 +163,13 @@ Current Time: {now}
         Async generator yielding SSE JSON string packets for real-time token streaming.
         """
         history = history or []
-        provider = provider or "auto"
 
-        # Obtain response and sources
+        # Obtain response and sources via Gemini / Cognitive pipeline
         reply, engine_used, sources = await cls.chat(
             message=message,
             db=db,
             history=history,
-            provider=provider,
+            provider="gemini",
             api_key=api_key,
             model=model
         )
@@ -218,7 +196,7 @@ Current Time: {now}
             "full_text": reply
         })
 
-    # ─── Live LLM Provider Connectors ───────────────────────────────────────
+    # ─── Live Google Gemini Connector ────────────────────────────────────────
 
     @classmethod
     async def _call_gemini(cls, message: str, system_ctx: str, db: Session, history: List[Dict[str, str]], api_key: str, model_name: str) -> str:
@@ -247,64 +225,6 @@ Current Time: {now}
                 return text
             raise Exception(f"Gemini API returned {res.status_code}: {res.text}")
 
-    @classmethod
-    async def _call_openai(cls, message: str, system_ctx: str, db: Session, history: List[Dict[str, str]], api_key: str, model_name: str) -> str:
-        url = "https://api.openai.com/v1/chat/completions"
-
-        messages = [{"role": "system", "content": system_ctx}]
-        for h in history[-8:]:
-            role = "user" if h.get("role") == "user" else "assistant"
-            messages.append({"role": role, "content": h.get("text", "")})
-        messages.append({"role": "user", "content": message})
-
-        payload = {
-            "model": model_name,
-            "messages": messages,
-            "temperature": 0.3,
-            "max_tokens": 1024
-        }
-
-        headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
-        async with httpx.AsyncClient(timeout=18.0) as client:
-            res = await client.post(url, json=payload, headers=headers)
-            if res.status_code == 200:
-                data = res.json()
-                text = data["choices"][0]["message"]["content"]
-                cls._intercept_and_apply_actions(message, db)
-                return text
-            raise Exception(f"OpenAI API returned {res.status_code}: {res.text}")
-
-    @classmethod
-    async def _call_anthropic(cls, message: str, system_ctx: str, db: Session, history: List[Dict[str, str]], api_key: str, model_name: str) -> str:
-        url = "https://api.anthropic.com/v1/messages"
-
-        messages = []
-        for h in history[-8:]:
-            role = "user" if h.get("role") == "user" else "assistant"
-            messages.append({"role": role, "content": h.get("text", "")})
-        messages.append({"role": "user", "content": message})
-
-        payload = {
-            "model": model_name,
-            "system": system_ctx,
-            "messages": messages,
-            "max_tokens": 1024,
-            "temperature": 0.3
-        }
-
-        headers = {
-            "x-api-key": api_key,
-            "anthropic-version": "2023-06-01",
-            "Content-Type": "application/json"
-        }
-        async with httpx.AsyncClient(timeout=18.0) as client:
-            res = await client.post(url, json=payload, headers=headers)
-            if res.status_code == 200:
-                data = res.json()
-                text = data["content"][0]["text"]
-                cls._intercept_and_apply_actions(message, db)
-                return text
-            raise Exception(f"Anthropic API returned {res.status_code}: {res.text}")
 
     @classmethod
     def _intercept_and_apply_actions(cls, message: str, db: Session):

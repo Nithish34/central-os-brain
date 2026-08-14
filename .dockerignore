@@ -1,0 +1,44 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+.pytest_cache/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+
+# Build & Cache
+dist/
+build/
+.cache/
+.gemini/
+
+# Databases & local state
+*.db
+*.sqlite
+*.sqlite3
+company_brain.db
+backend/company_brain.db
+data/*.db
+
+# Documentation & IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+docs/
+TASK_LIST.md

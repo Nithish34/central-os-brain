@@ -1,0 +1,36 @@
+# ==============================================================================
+# Fly.io configuration for Company Brain OS
+# Docs: https://fly.io/docs/reference/configuration/
+# ==============================================================================
+
+app = "company-brain-os"
+primary_region = "ord"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  ENVIRONMENT = "production"
+  DEBUG = "false"
+  APP_NAME = "Company Brain OS"
+  PORT = "8000"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+[[http_service.checks]]
+  grace_period = "15s"
+  interval = "20s"
+  method = "GET"
+  timeout = "5s"
+  path = "/api/v1/health"
+
+[[vm]]
+  memory = "1gb"
+  cpu_kind = "shared"
+  cpus = 1
