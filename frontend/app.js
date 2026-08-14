@@ -1011,6 +1011,9 @@ boot();
     appendMessageToContainer(miniMsgs, "user", msg, nowIso);
     showTyping();
 
+    const selectedProvider = modelSelect ? modelSelect.value : "auto";
+    const customKey = localStorage.getItem("cbos_custom_llm_key") || null;
+
     try {
       const res = await fetch("/api/v1/chat", {
         method: "POST",
@@ -1020,7 +1023,9 @@ boot();
         },
         body: JSON.stringify({
           message: msg,
-          session_id: activeSessionId
+          session_id: activeSessionId,
+          provider: selectedProvider,
+          api_key: customKey
         })
       });
       const data = await res.json();
@@ -1036,8 +1041,8 @@ boot();
       }
 
       const reply = data.reply || "I couldn't process that command.";
-      appendMessageToContainer(fsMsgs, "bot", reply, data.timestamp);
-      appendMessageToContainer(miniMsgs, "bot", reply, data.timestamp);
+      appendMessageToContainer(fsMsgs, "bot", reply, data.timestamp, data.engine);
+      appendMessageToContainer(miniMsgs, "bot", reply, data.timestamp, data.engine);
 
       if (fsStatus) {
         fsStatus.innerHTML = `<span class="chat-online-dot"></span> Session active &nbsp;&middot;&nbsp; ${data.message_count || 0} messages in context`;
