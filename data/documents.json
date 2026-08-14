@@ -1,0 +1,58 @@
+[
+  {
+    "id": "doc-payment-architecture",
+    "source": "Notion",
+    "type": "official_document",
+    "title": "Payment Service Architecture",
+    "content": "The Payment Service authenticates internal service calls using signed JWT tokens. All downstream checkout and invoice services must validate JWT claims before processing payment events.",
+    "author": "Arun Kumar",
+    "owner": "Platform Engineering",
+    "timestamp": "2026-07-20T10:30:00+05:30",
+    "authority_score": 0.86,
+    "freshness_score": 0.55,
+    "tags": ["payments", "authentication", "jwt", "architecture"],
+    "status": "stale"
+  },
+  {
+    "id": "doc-deployment-checklist",
+    "source": "Confluence",
+    "type": "official_document",
+    "title": "Deployment Checklist",
+    "content": "Production deployments for customer-facing services happen every Friday at 6 PM after QA sign-off. Hotfixes require approval from Engineering Manager and Support Lead.",
+    "author": "Meera S",
+    "owner": "Release Engineering",
+    "timestamp": "2026-07-08T15:00:00+05:30",
+    "authority_score": 0.82,
+    "freshness_score": 0.48,
+    "tags": ["deployment", "release", "qa"],
+    "status": "stale"
+  },
+  {
+    "id": "doc-customer-onboarding",
+    "source": "Notion",
+    "type": "official_document",
+    "title": "Enterprise Customer Onboarding SOP",
+    "content": "Customer Success owns enterprise onboarding after contract signature. Engineering is involved only when custom integration work is approved.",
+    "author": "Divya N",
+    "owner": "Customer Success",
+    "timestamp": "2026-07-28T11:45:00+05:30",
+    "authority_score": 0.8,
+    "freshness_score": 0.62,
+    "tags": ["customer", "onboarding", "ownership"],
+    "status": "review_required"
+  },
+  {
+    "id": "doc-incident-response",
+    "source": "Notion",
+    "type": "official_document",
+    "title": "Incident Response Policy",
+    "content": "Severity 1 incidents require immediate escalation to the on-call engineer, engineering manager, and customer support lead. A postmortem must be published within 48 hours.",
+    "author": "Karthik V",
+    "owner": "SRE",
+    "timestamp": "2026-08-10T09:00:00+05:30",
+    "authority_score": 0.9,
+    "freshness_score": 0.91,
+    "tags": ["incident", "sre", "support"],
+    "status": "healthy"
+  }
+]

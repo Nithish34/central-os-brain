@@ -1,0 +1,67 @@
+[
+  {
+    "id": "evt-slack-oauth",
+    "source": "Slack",
+    "type": "engineering_decision",
+    "title": "Engineering huddle: OAuth2 migration confirmed",
+    "content": "Decision from today's payment huddle: all Payment Service internal calls move from JWT to OAuth2 client credentials. JWT support remains only for legacy read-only endpoints until September.",
+    "author": "Priya Raman",
+    "owner": "Platform Engineering",
+    "timestamp": "2026-08-14T09:35:00+05:30",
+    "authority_score": 0.92,
+    "freshness_score": 0.98,
+    "tags": ["payments", "authentication", "oauth2", "architecture"]
+  },
+  {
+    "id": "evt-github-oauth-pr",
+    "source": "GitHub",
+    "type": "pull_request",
+    "title": "PR #482: Add OAuth2 middleware to payment-service",
+    "content": "Merged OAuth2 client credential validation middleware for payment-service. JWT validator moved behind a legacy compatibility flag.",
+    "author": "Sanjay P",
+    "owner": "Platform Engineering",
+    "timestamp": "2026-08-14T11:10:00+05:30",
+    "authority_score": 0.88,
+    "freshness_score": 0.96,
+    "tags": ["payments", "authentication", "oauth2", "github"]
+  },
+  {
+    "id": "evt-release-cadence",
+    "source": "Slack",
+    "type": "release_update",
+    "title": "Release process changed to Tuesday/Thursday",
+    "content": "Starting this sprint, customer-facing deployments move from Friday evening to Tuesday and Thursday noon windows. QA sign-off remains mandatory.",
+    "author": "Meera S",
+    "owner": "Release Engineering",
+    "timestamp": "2026-08-13T16:20:00+05:30",
+    "authority_score": 0.89,
+    "freshness_score": 0.95,
+    "tags": ["deployment", "release", "qa"]
+  },
+  {
+    "id": "evt-onboarding-squad",
+    "source": "Meeting Notes",
+    "type": "operating_decision",
+    "title": "Enterprise onboarding ownership moved to Implementation Squad",
+    "content": "For enterprise customers above Rs. 25L annual contract value, Implementation Squad now owns onboarding from kickoff to go-live. Customer Success remains accountable for relationship health.",
+    "author": "Nisha M",
+    "owner": "Revenue Operations",
+    "timestamp": "2026-08-12T14:00:00+05:30",
+    "authority_score": 0.84,
+    "freshness_score": 0.9,
+    "tags": ["customer", "onboarding", "ownership"]
+  },
+  {
+    "id": "evt-incident-clean",
+    "source": "Jira",
+    "type": "process_ticket",
+    "title": "SRE-223: Validate Sev1 postmortem SLA",
+    "content": "Confirmed incident policy remains correct. Sev1 postmortem SLA is still 48 hours and escalation list is unchanged.",
+    "author": "Karthik V",
+    "owner": "SRE",
+    "timestamp": "2026-08-13T10:15:00+05:30",
+    "authority_score": 0.86,
+    "freshness_score": 0.94,
+    "tags": ["incident", "sre", "support"]
+  }
+]

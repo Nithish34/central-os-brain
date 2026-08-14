@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Company Brain OS</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">CB</div>
+          <div>
+            <strong>Company Brain</strong>
+            <span>Self-healing OS</span>
+          </div>
+        </div>
+        <nav class="nav">
+          <a href="#command" class="active">Command Center</a>
+          <a href="#conflicts">Conflicts</a>
+          <a href="#workflow">Workflows</a>
+          <a href="#audit">Audit Logs</a>
+        </nav>
+        <div class="sidebar-note">
+          <span>Demo Mode</span>
+          Synthetic Slack, Notion, GitHub, Jira, and meeting data.
+        </div>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">National Hackathon MVP</p>
+            <h1>Company Brain OS</h1>
+          </div>
+          <div class="top-actions">
+            <button id="resetButton" class="ghost-button" type="button">Reset Demo</button>
+            <span id="apiStatus" class="status-pill">Connecting</span>
+          </div>
+        </header>
+
+        <section id="command" class="section">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Command Center</p>
+              <h2>Knowledge Health</h2>
+            </div>
+            <p id="lastScan" class="muted">Waiting for scan...</p>
+          </div>
+          <div class="metrics">
+            <div class="metric critical">
+              <span>Knowledge health</span>
+              <strong id="knowledgeHealth">--%</strong>
+            </div>
+            <div class="metric">
+              <span>Open conflicts</span>
+              <strong id="openConflicts">--</strong>
+            </div>
+            <div class="metric">
+              <span>Stale documents</span>
+              <strong id="staleDocuments">--</strong>
+            </div>
+            <div class="metric">
+              <span>Workflow actions</span>
+              <strong id="workflowCount">--</strong>
+            </div>
+          </div>
+        </section>
+
+        <section id="conflicts" class="section two-column">
+          <div>
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Self-Healing Knowledge</p>
+                <h2>Detected Conflicts</h2>
+              </div>
+            </div>
+            <div id="conflictList" class="conflict-list"></div>
+          </div>
+
+          <article id="conflictDetail" class="detail-panel">
+            <div class="empty-state">Select a conflict to review evidence.</div>
+          </article>
+        </section>
+
+        <section id="workflow" class="section">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Agentic Execution</p>
+              <h2>Workflow Timeline</h2>
+            </div>
+          </div>
+          <div id="workflowTimeline" class="timeline"></div>
+        </section>
+
+        <section id="audit" class="section">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Enterprise Trust</p>
+              <h2>Audit Logs</h2>
+            </div>
+          </div>
+          <div id="auditLogs" class="audit-list"></div>
+        </section>
+      </main>
+    </div>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

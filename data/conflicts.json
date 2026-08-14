@@ -1,0 +1,44 @@
+[
+  {
+    "id": "conflict-auth-method",
+    "title": "Payment authentication method mismatch",
+    "severity": "critical",
+    "domain": "Platform Engineering",
+    "document_id": "doc-payment-architecture",
+    "evidence_ids": ["evt-slack-oauth", "evt-github-oauth-pr"],
+    "old_claim": "Payment Service authenticates internal service calls using signed JWT tokens.",
+    "new_claim": "Payment Service internal calls now use OAuth2 client credentials, with JWT only for legacy read-only endpoints.",
+    "recommended_update": "Update the Payment Service Architecture document to state that internal service calls must use OAuth2 client credentials. Keep JWT documented only as a temporary legacy path for read-only endpoints until September.",
+    "business_impact": "Engineers may build new integrations against the deprecated JWT path, creating security and rollout risk.",
+    "owner": "Platform Engineering",
+    "status": "open"
+  },
+  {
+    "id": "conflict-release-cadence",
+    "title": "Deployment cadence changed",
+    "severity": "high",
+    "domain": "Release Engineering",
+    "document_id": "doc-deployment-checklist",
+    "evidence_ids": ["evt-release-cadence"],
+    "old_claim": "Production deployments happen every Friday at 6 PM.",
+    "new_claim": "Customer-facing deployments now happen Tuesday and Thursday at noon.",
+    "recommended_update": "Update the Deployment Checklist with Tuesday and Thursday noon release windows while preserving mandatory QA sign-off.",
+    "business_impact": "Teams may wait for the wrong release window or schedule customer work around an outdated Friday deployment process.",
+    "owner": "Release Engineering",
+    "status": "open"
+  },
+  {
+    "id": "conflict-onboarding-owner",
+    "title": "Enterprise onboarding ownership changed",
+    "severity": "medium",
+    "domain": "Revenue Operations",
+    "document_id": "doc-customer-onboarding",
+    "evidence_ids": ["evt-onboarding-squad"],
+    "old_claim": "Customer Success owns enterprise onboarding after contract signature.",
+    "new_claim": "Implementation Squad owns onboarding for enterprise customers above Rs. 25L ACV.",
+    "recommended_update": "Update the onboarding SOP to assign high-value enterprise onboarding to Implementation Squad from kickoff to go-live, with Customer Success owning relationship health.",
+    "business_impact": "High-value customers may experience delays because ownership is unclear between Customer Success and Implementation Squad.",
+    "owner": "Revenue Operations",
+    "status": "open"
+  }
+]
