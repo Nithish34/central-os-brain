@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id                String             @id @default(uuid())
+  name              String
+  createdAt         DateTime           @default(now())
+  connectorAccounts ConnectorAccount[]
+  rawEvents         RawEvent[]
+  normalizedEvents  NormalizedEvent[]
+}
+
+model ConnectorAccount {
+  id                String      @id @default(uuid())
+  organizationId    String
+  source            String
+  externalAccountId String
+  displayName       String?
+  metadata          Json?
+  lastHistoryId     String?
+  watchExpiresAt    DateTime?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  oauthToken        OAuthToken?
+
+  @@unique([organizationId, source, externalAccountId])
+  @@index([source, externalAccountId])
+}
+
+model OAuthToken {
+  id                 String           @id @default(uuid())
+  connectorAccountId String           @unique
+  accessToken        String
+  refreshToken       String?
+  scopes             String[]
+  expiresAt          DateTime?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  connectorAccount   ConnectorAccount @relation(fields: [connectorAccountId], references: [id], onDelete: Cascade)
+}
+
+model RawEvent {
+  id             String       @id @default(uuid())
+  organizationId String
+  source         String
+  sourceEventId  String
+  correlationId  String
+  status         String
+  payload        Json
+  receivedAt     DateTime
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, source, sourceEventId])
+  @@index([correlationId])
+}
+
+model NormalizedEvent {
+  id             String       @id @default(uuid())
+  eventId        String       @unique
+  organizationId String
+  source         String
+  sourceEventId  String
+  eventType      String
+  correlationId  String
+  payload        Json
+  occurredAt     DateTime
+  receivedAt     DateTime
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, source, sourceEventId])
+  @@index([correlationId])
+}
+
+model IdempotencyKey {
+  key           String   @id
+  correlationId String
+  createdAt     DateTime @default(now())
+}

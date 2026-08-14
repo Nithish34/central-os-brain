@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  # Layer 1: Relational & Vector Storage
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: company-brain-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: company_brain
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Layer 1: Knowledge Graph Database
+  neo4j:
+    image: neo4j:5.18-community
+    container_name: company-brain-neo4j
+    restart: always
+    environment:
+      NEO4J_AUTH: neo4j/companybrain123
+      NEO4J_PLUGINS: '["apoc"]'
+    ports:
+      - "7474:7474" # HTTP Browser
+      - "7687:7687" # Bolt Protocol
+    volumes:
+      - neo4j_data:/data
+
+  # Layer 1 & 3: Ingestion Stream & Cache
+  redis:
+    image: redis:7.2-alpine
+    container_name: company-brain-redis
+    restart: always
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+volumes:
+  postgres_data:
+  neo4j_data:
+  redis_data:

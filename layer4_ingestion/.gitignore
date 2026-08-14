@@ -1,0 +1,11 @@
+node_modules
+dist
+.env
+.env.local
+coverage
+*.log
+prisma/dev.db
+.venv
+__pycache__
+.pytest_cache
+*.pyc

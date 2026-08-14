@@ -11,7 +11,7 @@ const api = {
   workflows:    "/api/workflows",
   audit:        "/api/audit-logs",
   reset:        "/api/demo/reset",
-  riskCheck:    (id) => `/api/risk-check/${id}`,
+  riskCheck:    (id) => `/api/conflicts/${id}/risk-check`,
 };
 
 /* ─── State ────────────────────────────────────────────────────────────── */
