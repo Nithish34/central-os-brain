@@ -3,106 +3,158 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Company Brain OS</title>
+    <title>Company Brain OS — Self-Healing Enterprise Knowledge</title>
+    <meta name="description" content="Company Brain OS detects outdated company knowledge, explains conflicts with evidence, and triggers enterprise workflows after human approval." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
     <div class="app">
-      <aside class="sidebar">
+
+      <!-- ── Sidebar ────────────────────────────────────── -->
+      <aside class="sidebar" role="navigation" aria-label="Main navigation">
         <div class="brand">
-          <div class="brand-mark">CB</div>
+          <div class="brand-mark" aria-hidden="true">CB</div>
           <div>
             <strong>Company Brain</strong>
-            <span>Self-healing OS</span>
+            <span>Self-Healing OS</span>
           </div>
         </div>
+
+        <p class="nav-label">Navigation</p>
         <nav class="nav">
-          <a href="#command" class="active">Command Center</a>
-          <a href="#conflicts">Conflicts</a>
-          <a href="#workflow">Workflows</a>
-          <a href="#audit">Audit Logs</a>
+          <a href="#command" id="nav-command" class="active" aria-current="page">
+            <span class="nav-icon" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" fill="currentColor"/><rect x="9" y="1" width="6" height="6" rx="1.5" fill="currentColor" opacity="0.5"/><rect x="1" y="9" width="6" height="6" rx="1.5" fill="currentColor" opacity="0.5"/><rect x="9" y="9" width="6" height="6" rx="1.5" fill="currentColor" opacity="0.5"/></svg>
+            </span>
+            Command Center
+          </a>
+          <a href="#conflicts" id="nav-conflicts">
+            <span class="nav-icon" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2L14 13H2L8 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M8 6V9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="11.5" r="0.75" fill="currentColor"/></svg>
+            </span>
+            Conflicts
+            <span id="conflictBadge" class="badge open" style="margin-left:auto;font-size:10px;padding:2px 7px;"></span>
+          </a>
+          <a href="#workflow" id="nav-workflow">
+            <span class="nav-icon" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="3" cy="8" r="2" stroke="currentColor" stroke-width="1.5"/><circle cx="13" cy="4" r="2" stroke="currentColor" stroke-width="1.5"/><circle cx="13" cy="12" r="2" stroke="currentColor" stroke-width="1.5"/><path d="M5 7.5L11 4.5M5 8.5L11 11.5" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/></svg>
+            </span>
+            Workflows
+          </a>
+          <a href="#audit" id="nav-audit">
+            <span class="nav-icon" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="1.5" width="12" height="13" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M5 5.5H11M5 8.5H11M5 11.5H8" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/></svg>
+            </span>
+            Audit Logs
+          </a>
         </nav>
+
         <div class="sidebar-note">
-          <span>Demo Mode</span>
-          Synthetic Slack, Notion, GitHub, Jira, and meeting data.
+          <span><span class="dot" aria-hidden="true"></span>Demo Mode</span>
+          Synthetic Slack, Notion, GitHub, Jira &amp; meeting transcripts. No real integrations.
         </div>
       </aside>
 
-      <main class="main">
+      <!-- ── Main Content ────────────────────────────────── -->
+      <main class="main" id="main-content">
+
+        <!-- Topbar -->
         <header class="topbar">
-          <div>
-            <p class="eyebrow">National Hackathon MVP</p>
-            <h1>Company Brain OS</h1>
+          <div class="topbar-left">
+            <div class="topbar-logo">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="6" stroke="#22c55e" stroke-width="1.5"/><path d="M4 7l2 2 4-4" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              National Hackathon MVP
+            </div>
+            <div class="topbar-divider" aria-hidden="true"></div>
+            <div>
+              <p class="eyebrow">Knowledge Intelligence Platform</p>
+              <h1>Company Brain OS</h1>
+            </div>
           </div>
           <div class="top-actions">
-            <button id="resetButton" class="ghost-button" type="button">Reset Demo</button>
-            <span id="apiStatus" class="status-pill">Connecting</span>
+            <button id="resetButton" class="ghost-button" type="button" title="Reset all demo state to initial values">
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true"><path d="M2 6.5A4.5 4.5 0 1 1 6.5 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M2 3.5V6.5H5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Reset Demo
+            </button>
+            <span id="apiStatus" class="status-pill" role="status" aria-live="polite">Connecting</span>
           </div>
         </header>
 
-        <section id="command" class="section">
+        <!-- ── Command Center ─────────────────────────────── -->
+        <section id="command" class="section" aria-labelledby="command-heading">
           <div class="section-heading">
             <div>
-              <p class="eyebrow">Command Center</p>
-              <h2>Knowledge Health</h2>
+              <p class="eyebrow">Real-Time Intelligence</p>
+              <h2 id="command-heading">Knowledge Health Dashboard</h2>
             </div>
-            <p id="lastScan" class="muted">Waiting for scan...</p>
+            <p id="lastScan" class="muted" aria-live="polite">Scanning…</p>
           </div>
-          <div class="metrics">
-            <div class="metric critical">
-              <span>Knowledge health</span>
+          <div class="metrics" role="list">
+            <div class="metric critical" role="listitem">
+              <div class="metric-icon" aria-hidden="true">🧠</div>
+              <label for="knowledgeHealth">Knowledge Health</label>
               <strong id="knowledgeHealth">--%</strong>
             </div>
-            <div class="metric">
-              <span>Open conflicts</span>
+            <div class="metric danger" role="listitem">
+              <div class="metric-icon" aria-hidden="true">⚠️</div>
+              <label for="openConflicts">Open Conflicts</label>
               <strong id="openConflicts">--</strong>
             </div>
-            <div class="metric">
-              <span>Stale documents</span>
+            <div class="metric info" role="listitem">
+              <div class="metric-icon" aria-hidden="true">📄</div>
+              <label for="staleDocuments">Stale Documents</label>
               <strong id="staleDocuments">--</strong>
             </div>
-            <div class="metric">
-              <span>Workflow actions</span>
+            <div class="metric success" role="listitem">
+              <div class="metric-icon" aria-hidden="true">⚡</div>
+              <label for="workflowCount">Workflow Actions</label>
               <strong id="workflowCount">--</strong>
             </div>
           </div>
         </section>
 
-        <section id="conflicts" class="section two-column">
+        <!-- ── Conflicts ──────────────────────────────────── -->
+        <section id="conflicts" class="section two-column" aria-labelledby="conflicts-heading">
           <div>
             <div class="section-heading">
               <div>
                 <p class="eyebrow">Self-Healing Knowledge</p>
-                <h2>Detected Conflicts</h2>
+                <h2 id="conflicts-heading">Detected Conflicts</h2>
               </div>
             </div>
-            <div id="conflictList" class="conflict-list"></div>
+            <div id="conflictList" class="conflict-list" role="list" aria-label="Conflict list"></div>
           </div>
 
-          <article id="conflictDetail" class="detail-panel">
-            <div class="empty-state">Select a conflict to review evidence.</div>
+          <article id="conflictDetail" class="detail-panel" aria-label="Conflict detail">
+            <div class="empty-state">Select a conflict to review evidence and approve a fix.</div>
           </article>
         </section>
 
-        <section id="workflow" class="section">
+        <!-- ── Workflows ──────────────────────────────────── -->
+        <section id="workflow" class="section" aria-labelledby="workflow-heading">
           <div class="section-heading">
             <div>
               <p class="eyebrow">Agentic Execution</p>
-              <h2>Workflow Timeline</h2>
+              <h2 id="workflow-heading">Workflow Timeline</h2>
             </div>
           </div>
-          <div id="workflowTimeline" class="timeline"></div>
+          <div id="workflowTimeline" class="timeline" role="list" aria-live="polite"></div>
         </section>
 
-        <section id="audit" class="section">
+        <!-- ── Audit Logs ─────────────────────────────────── -->
+        <section id="audit" class="section" aria-labelledby="audit-heading">
           <div class="section-heading">
             <div>
-              <p class="eyebrow">Enterprise Trust</p>
-              <h2>Audit Logs</h2>
+              <p class="eyebrow">Enterprise Trust &amp; Compliance</p>
+              <h2 id="audit-heading">Audit Logs</h2>
             </div>
           </div>
-          <div id="auditLogs" class="audit-list"></div>
+          <div id="auditLogs" class="audit-list" role="list" aria-live="polite"></div>
         </section>
+
       </main>
     </div>
 
