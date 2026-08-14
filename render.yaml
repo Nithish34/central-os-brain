@@ -23,24 +23,13 @@ services:
           name: company-brain-postgres
           property: connectionString
       - key: REDIS_URL
-        fromService:
-          type: redis
-          name: company-brain-redis
-          property: connectionString
+        value: "redis://localhost:6379/0"
       - key: JWT_SECRET
         generateValue: true
       - key: GEMINI_API_KEY
         sync: false # Set in Render Dashboard secrets
       - key: CORS_ALLOWED_ORIGINS
         value: "*"
-
-  # Managed Redis Cache / Event Bus
-  - type: redis
-    name: company-brain-redis
-    plan: free
-    region: oregon
-    maxmemoryPolicy: allkeys-lru
-    ipAllowList: [] # Internal access only
 
 databases:
   # Managed PostgreSQL with pgvector support
@@ -49,4 +38,5 @@ databases:
     region: oregon
     databaseName: company_brain
     user: company_brain_user
+
 
