@@ -725,7 +725,7 @@ boot();
       .replace(/#{1,3}\s(.+)/g, "<strong style='font-size:1.05em;display:block;margin:4px 0;'>$1</strong>");
   }
 
-  function appendMessageToContainer(container, role, text, timestamp, engine) {
+  function appendMessageToContainer(container, role, text, timestamp) {
     if (!container) return;
     const wrap = document.createElement("div");
     wrap.className = `chat-msg ${role}`;
@@ -734,11 +734,19 @@ boot();
     bubble.innerHTML = renderMarkdown(text);
 
     const metaRow = document.createElement("div");
-    metaRow.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:10.5px;opacity:0.65;margin-top:6px;padding-top:4px;border-top:1px solid rgba(0,0,0,0.05);";
+    metaRow.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11px;opacity:0.6;margin-top:6px;padding-top:4px;border-top:1px solid rgba(0,0,0,0.05);";
 
     if (role === "bot") {
-      const engineName = engine === "gemini-1.5-flash" ? "✨ Gemini 1.5 Flash" : (engine === "gpt-4o-mini" ? "🤖 GPT-4o Mini" : (engine === "claude-3-5-sonnet" ? "🔮 Claude 3.5 Sonnet" : "🧠 Cognitive NLP Engine"));
-      metaRow.innerHTML = `<span style="font-weight:600;">${engineName}</span><span>${timestamp ? formatTime(timestamp) : 'Live State'}</span>`;
+      const copyBtn = document.createElement("button");
+      copyBtn.type = "button";
+      copyBtn.style.cssText = "background:none;border:none;color:var(--muted);cursor:pointer;font-size:11px;padding:2px 4px;border-radius:4px;display:flex;align-items:center;gap:4px;";
+      copyBtn.innerHTML = `<span>📋 Copy</span>`;
+      copyBtn.onclick = () => {
+        navigator.clipboard.writeText(bubble.innerText.replace(/📋 Copy/, "").trim());
+        window.showToast("📋 Response copied to clipboard!");
+      };
+      metaRow.innerHTML = `<span>${timestamp ? formatTime(timestamp) : 'Company Brain AI'}</span>`;
+      metaRow.appendChild(copyBtn);
       bubble.appendChild(metaRow);
     } else if (timestamp) {
       const timeTag = document.createElement("div");
@@ -750,18 +758,6 @@ boot();
     wrap.appendChild(bubble);
     container.appendChild(wrap);
     scrollToBottom();
-  }
-
-  // Model selection persistence
-  const modelSelect = $("chatModelSelect");
-  const SAVED_MODEL_KEY = "cbos_selected_model";
-  if (modelSelect) {
-    const savedModel = localStorage.getItem(SAVED_MODEL_KEY);
-    if (savedModel) modelSelect.value = savedModel;
-    modelSelect.addEventListener("change", () => {
-      localStorage.setItem(SAVED_MODEL_KEY, modelSelect.value);
-      window.showToast(`🤖 AI Model changed to: ${modelSelect.options[modelSelect.selectedIndex].text}`);
-    });
   }
 
   function showTyping() {
@@ -1011,7 +1007,6 @@ boot();
     appendMessageToContainer(miniMsgs, "user", msg, nowIso);
     showTyping();
 
-    const selectedProvider = modelSelect ? modelSelect.value : "auto";
     const customKey = localStorage.getItem("cbos_custom_llm_key") || null;
 
     try {
@@ -1024,7 +1019,6 @@ boot();
         body: JSON.stringify({
           message: msg,
           session_id: activeSessionId,
-          provider: selectedProvider,
           api_key: customKey
         })
       });
@@ -1041,8 +1035,8 @@ boot();
       }
 
       const reply = data.reply || "I couldn't process that command.";
-      appendMessageToContainer(fsMsgs, "bot", reply, data.timestamp, data.engine);
-      appendMessageToContainer(miniMsgs, "bot", reply, data.timestamp, data.engine);
+      appendMessageToContainer(fsMsgs, "bot", reply, data.timestamp);
+      appendMessageToContainer(miniMsgs, "bot", reply, data.timestamp);
 
       if (fsStatus) {
         fsStatus.innerHTML = `<span class="chat-online-dot"></span> Session active &nbsp;&middot;&nbsp; ${data.message_count || 0} messages in context`;
