@@ -9,7 +9,7 @@ from app.core.database import init_db, SessionLocal
 from app.api.v1.router import api_router
 from app.api.v1.endpoints.demo import reset_and_seed_db
 
-FRONTEND_DIR = ROOT_DIR / "frontend"
+STATIC_DIR = (ROOT_DIR / "frontend" / "dist") if (ROOT_DIR / "frontend" / "dist").exists() else (ROOT_DIR / "frontend")
 
 
 @asynccontextmanager
@@ -60,7 +60,7 @@ app.include_router(root_ingestion_router, prefix="")
 # Frontend static files and SPA route
 @app.get("/")
 def serve_index():
-    return FileResponse(FRONTEND_DIR / "index.html")
+    return FileResponse(STATIC_DIR / "index.html")
 
 
-app.mount("/", StaticFiles(directory=str(FRONTEND_DIR)), name="frontend")
+app.mount("/", StaticFiles(directory=str(STATIC_DIR)), name="frontend")

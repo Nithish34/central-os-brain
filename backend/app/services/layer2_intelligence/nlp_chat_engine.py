@@ -1,8 +1,9 @@
 import json
 import re
+import asyncio
 import httpx
 from datetime import datetime
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Dict, Any, Optional, Tuple, AsyncGenerator
 from sqlalchemy.orm import Session
 from app.core.config import Settings
 from app.models.conflict import Conflict
@@ -12,6 +13,7 @@ from app.models.workflow import WorkflowAction
 from app.models.audit import AuditLog
 from app.models.agent import AgentProfile
 from app.services.layer0_execution.action_executor import ActionExecutorService
+from app.services.layer2_intelligence.rag_engine import RAGEngineService
 
 settings = Settings()
 
@@ -22,19 +24,24 @@ class NLPChatEngine:
     Features:
     1. Live LLM Integration (OpenAI GPT-4o, Google Gemini, Anthropic Claude, Ollama)
     2. Deep System Grounding (Injects full knowledge graph, live events, DB state)
-    3. Built-in Cognitive Reasoner (Analytical, causal, comparative, synthesis, drafting)
-    4. Autonomous Function Calling (Approve, reject, reopen, assign, update risk/severity)
+    3. Dynamic Hybrid RAG Retrieval (Dense 1536-dim embeddings + BM25 sparse search)
+    4. Real-Time SSE Token Streaming (Fast, silky smooth conversational UX)
+    5. Built-in Cognitive Reasoner (Analytical, causal, comparative, synthesis, drafting)
+    6. Autonomous Function Calling (Approve, reject, reopen, assign, update risk/severity)
     """
 
-    @staticmethod
-    def build_system_context(db: Session) -> str:
-        """Constructs a comprehensive real-time knowledge snapshot for NLP reasoning."""
+    @classmethod
+    def build_system_context(cls, db: Session, query: Optional[str] = None) -> Tuple[str, List[Dict[str, Any]]]:
+        """Constructs a comprehensive real-time knowledge snapshot for NLP reasoning with RAG."""
         conflicts = db.query(Conflict).all()
         events = db.query(CompanyEvent).order_by(CompanyEvent.timestamp.desc()).limit(20).all()
         docs = db.query(Document).all()
         workflows = db.query(WorkflowAction).order_by(WorkflowAction.created_at.desc()).limit(12).all()
         audits = db.query(AuditLog).order_by(AuditLog.timestamp.desc()).limit(10).all()
         agents = db.query(AgentProfile).all()
+
+        # Hybrid RAG Context Retrieval for specific prompt
+        rag_context, citations = RAGEngineService.get_rag_context(db, query or "company engineering architecture and decisions", top_k=4)
 
         conflict_data = []
         for c in conflicts:
@@ -73,10 +80,13 @@ class NLPChatEngine:
 
         now = datetime.now().astimezone().strftime("%d %b %Y, %I:%M:%S %p %Z")
 
-        return f"""You are the Company Brain OS Chief AI Intelligence Officer & Autonomous Orchestrator.
+        prompt = f"""You are the Company Brain OS Chief AI Intelligence Officer & Autonomous Orchestrator.
 Current Time: {now}
 
 === SYSTEM KNOWLEDGE GRAPH & LIVE DATA ===
+
+--- DYNAMIC RAG RELEVANT EVIDENCE CHUNKS ---
+{rag_context}
 
 --- CONFLICT INBOX ({len(conflicts)} total) ---
 {chr(10).join(conflict_data) if conflict_data else "No conflicts."}
@@ -103,6 +113,7 @@ Current Time: {now}
 4. When asked analytical questions ("why", "compare", "what if", "draft"), generate structured, executive-ready insights.
 5. Use clear GitHub-flavored markdown with bold headers, bullet lists, code blocks, and callouts.
 """
+        return prompt, citations
 
     @classmethod
     async def chat(
@@ -113,14 +124,15 @@ Current Time: {now}
         provider: Optional[str] = None,
         api_key: Optional[str] = None,
         model: Optional[str] = None
-    ) -> Tuple[str, str]:
+    ) -> Tuple[str, str, List[Dict[str, Any]]]:
         """
         Main entry point for conversational NLP.
         Attempts Live LLM if key is available, else falls back to Cognitive Reasoner.
-        Returns (reply_text, engine_used).
+        Returns (reply_text, engine_used, citations).
         """
         history = history or []
         provider = provider or "auto"
+        system_ctx, citations = cls.build_system_context(db, query=message)
 
         # Check for configured LLM keys
         gemini_key = api_key if provider == "gemini" else (settings.GEMINI_API_KEY or api_key)
@@ -130,40 +142,87 @@ Current Time: {now}
         # 1. Try Google Gemini API if key is present
         if gemini_key:
             try:
-                reply = await cls._call_gemini(message, db, history, gemini_key, model or "gemini-1.5-flash")
+                reply = await cls._call_gemini(message, system_ctx, db, history, gemini_key, model or "gemini-1.5-flash")
                 if reply:
-                    return reply, "gemini-1.5-flash"
+                    return reply, "gemini-1.5-flash", citations
             except Exception as e:
                 print(f"[NLPChatEngine] Gemini error: {e}, falling back to cognitive reasoner.")
 
         # 2. Try OpenAI API if key is present
         if openai_key:
             try:
-                reply = await cls._call_openai(message, db, history, openai_key, model or settings.LLM_MODEL or "gpt-4o-mini")
+                reply = await cls._call_openai(message, system_ctx, db, history, openai_key, model or settings.LLM_MODEL or "gpt-4o-mini")
                 if reply:
-                    return reply, "gpt-4o-mini"
+                    return reply, "gpt-4o-mini", citations
             except Exception as e:
                 print(f"[NLPChatEngine] OpenAI error: {e}, falling back to cognitive reasoner.")
 
         # 3. Try Anthropic API if key is present
         if anthropic_key:
             try:
-                reply = await cls._call_anthropic(message, db, history, anthropic_key, model or "claude-3-5-sonnet-20241022")
+                reply = await cls._call_anthropic(message, system_ctx, db, history, anthropic_key, model or "claude-3-5-sonnet-20241022")
                 if reply:
-                    return reply, "claude-3-5-sonnet"
+                    return reply, "claude-3-5-sonnet", citations
             except Exception as e:
                 print(f"[NLPChatEngine] Anthropic error: {e}, falling back to cognitive reasoner.")
 
         # 4. Built-in Cognitive Reasoner (Universal Zero-Key NLP)
         reply = cls.cognitive_reasoning_pipeline(message, db, history)
-        return reply, "cognitive-nlp-engine"
+        return reply, "cognitive-nlp-engine", citations
+
+    @classmethod
+    async def chat_stream(
+        cls,
+        message: str,
+        db: Session,
+        history: List[Dict[str, str]] = None,
+        provider: Optional[str] = None,
+        api_key: Optional[str] = None,
+        model: Optional[str] = None
+    ) -> AsyncGenerator[str, None]:
+        """
+        Async generator yielding SSE JSON string packets for real-time token streaming.
+        """
+        history = history or []
+        provider = provider or "auto"
+
+        # Obtain response and sources
+        reply, engine_used, sources = await cls.chat(
+            message=message,
+            db=db,
+            history=history,
+            provider=provider,
+            api_key=api_key,
+            model=model
+        )
+
+        # Stream words/tokens smoothly with realistic typewriter cadence
+        tokens = re.split(r'(\s+)', reply)
+        buffer = ""
+        for i, token in enumerate(tokens):
+            buffer += token
+            # Yield every 1-2 tokens or punctuation mark
+            if i % 2 == 0 or token in ["\n", "\n\n", ".", "!", "?", "•", "#"]:
+                yield json.dumps({"chunk": buffer, "done": False})
+                buffer = ""
+                await asyncio.sleep(0.012)
+
+        if buffer:
+            yield json.dumps({"chunk": buffer, "done": False})
+
+        # Final completion event
+        yield json.dumps({
+            "done": True,
+            "engine": engine_used,
+            "sources": sources,
+            "full_text": reply
+        })
 
     # ─── Live LLM Provider Connectors ───────────────────────────────────────
 
     @classmethod
-    async def _call_gemini(cls, message: str, db: Session, history: List[Dict[str, str]], api_key: str, model_name: str) -> str:
+    async def _call_gemini(cls, message: str, system_ctx: str, db: Session, history: List[Dict[str, str]], api_key: str, model_name: str) -> str:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
-        system_ctx = cls.build_system_context(db)
 
         contents = [{"role": "user", "parts": [{"text": f"System Context & Live System State:\n{system_ctx}"}]}]
         contents.append({"role": "model", "parts": [{"text": "Understood. I am online as Company Brain OS AI Intelligence Officer with live state grounding."}]})
@@ -189,9 +248,8 @@ Current Time: {now}
             raise Exception(f"Gemini API returned {res.status_code}: {res.text}")
 
     @classmethod
-    async def _call_openai(cls, message: str, db: Session, history: List[Dict[str, str]], api_key: str, model_name: str) -> str:
+    async def _call_openai(cls, message: str, system_ctx: str, db: Session, history: List[Dict[str, str]], api_key: str, model_name: str) -> str:
         url = "https://api.openai.com/v1/chat/completions"
-        system_ctx = cls.build_system_context(db)
 
         messages = [{"role": "system", "content": system_ctx}]
         for h in history[-8:]:
@@ -217,9 +275,8 @@ Current Time: {now}
             raise Exception(f"OpenAI API returned {res.status_code}: {res.text}")
 
     @classmethod
-    async def _call_anthropic(cls, message: str, db: Session, history: List[Dict[str, str]], api_key: str, model_name: str) -> str:
+    async def _call_anthropic(cls, message: str, system_ctx: str, db: Session, history: List[Dict[str, str]], api_key: str, model_name: str) -> str:
         url = "https://api.anthropic.com/v1/messages"
-        system_ctx = cls.build_system_context(db)
 
         messages = []
         for h in history[-8:]:
@@ -262,6 +319,7 @@ Current Time: {now}
             for c in conflicts:
                 if (c.title.lower() in msg or (c.domain and c.domain.lower() in msg)) and c.status == "open":
                     ActionExecutorService.apply_approval(db, c.id, "reject", "Rejected via LLM chat command")
+
 
     # ─── Built-in Cognitive Reasoner (Universal Semantic Engine) ────────────
 

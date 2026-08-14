@@ -1,10 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from datetime import datetime, timedelta
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 from collections import OrderedDict
+import json
 import uuid
+from app.core.config import settings
 from app.core.database import get_db
 from app.models.conflict import Conflict
 from app.models.event import CompanyEvent
@@ -12,49 +15,100 @@ from app.models.document import Document
 from app.models.workflow import WorkflowAction
 from app.models.audit import AuditLog
 from app.models.agent import AgentProfile
+from app.models.chat_session import ChatSessionModel, ChatMessageModel
 from app.services.layer0_execution.action_executor import ActionExecutorService
 
 router = APIRouter()
 
 
-# ─── Server-side Session Store ───────────────────────────────────────────────
-# In-memory dict keyed by session_id → {history: [...], created_at, last_active}
-# Max 200 sessions, 6-hour idle expiry, 500 messages per session.
+
+# ─── Database-Backed Write-Through Session Store ────────────────────────────
+# In-memory LRU cache keyed by session_id → {history: [...], created_at, last_active}
+# Backed by persistent SQLite/Postgres chat_sessions & chat_messages tables.
 
 MAX_SESSIONS     = 200
-SESSION_TTL_HRS  = 6
+SESSION_TTL_HRS  = 24
 MAX_MSG_PER_SESS = 500
 
 _sessions: OrderedDict = OrderedDict()   # session_id → session dict
 
 
 def _purge_expired():
-    """Remove sessions idle for more than SESSION_TTL_HRS."""
+    """Remove sessions idle for more than SESSION_TTL_HRS from memory cache."""
     cutoff = datetime.utcnow() - timedelta(hours=SESSION_TTL_HRS)
-    expired = [k for k, v in _sessions.items() if v["last_active"] < cutoff]
+    expired = [k for k, v in _sessions.items() if v.get("last_active") and v["last_active"] < cutoff]
     for k in expired:
         del _sessions[k]
 
 
-def _get_or_create_session(session_id: Optional[str], title: Optional[str] = None) -> tuple[str, dict]:
-    """Return (session_id, session_dict). Creates a new session if id is unknown."""
+def _get_or_create_session(db: Session, session_id: Optional[str], title: Optional[str] = None) -> tuple[str, dict]:
+    """
+    Return (session_id, session_dict).
+    Checks in-memory LRU cache -> Checks database -> Creates new DB record if unknown.
+    """
     _purge_expired()
+    now = datetime.utcnow()
+
+    # 1. Check in-memory cache
     if session_id and session_id in _sessions:
         sess = _sessions[session_id]
-        sess["last_active"] = datetime.utcnow()
+        sess["last_active"] = now
         if title:
             sess["title"] = title
-        _sessions.move_to_end(session_id)  # LRU update
+        _sessions.move_to_end(session_id)
         return session_id, sess
-    # Create new
+
+    # 2. Check Database for existing session
+    if session_id:
+        db_sess = db.query(ChatSessionModel).filter(ChatSessionModel.id == session_id).first()
+        if db_sess:
+            db_messages = db.query(ChatMessageModel).filter(ChatMessageModel.session_id == session_id).order_by(ChatMessageModel.timestamp.asc()).all()
+            history = [
+                {
+                    "id": m.id,
+                    "role": m.role,
+                    "text": m.text,
+                    "timestamp": m.timestamp.isoformat() if isinstance(m.timestamp, datetime) else str(m.timestamp),
+                    "engine": m.engine,
+                    "sources": m.sources,
+                }
+                for m in db_messages
+            ]
+            sess = {
+                "title": db_sess.title,
+                "history": history,
+                "created_at": db_sess.created_at,
+                "last_active": now,
+            }
+            db_sess.last_active = now
+            if title:
+                db_sess.title = title
+                sess["title"] = title
+            db.commit()
+            _sessions[session_id] = sess
+            return session_id, sess
+
+    # 3. Create new Session in DB & Cache
     if len(_sessions) >= MAX_SESSIONS:
-        _sessions.popitem(last=False)  # evict oldest
+        _sessions.popitem(last=False)
+
     new_id = str(uuid.uuid4())
+    new_title = title or "New Conversation"
+    db_new_sess = ChatSessionModel(
+        id=new_id,
+        title=new_title,
+        created_at=now,
+        last_active=now,
+        message_count=0
+    )
+    db.add(db_new_sess)
+    db.commit()
+
     sess = {
-        "title": title or "New Conversation",
-        "history": [],           # list of {"role": "user"|"bot", "text": str, "timestamp": str}
-        "created_at": datetime.utcnow(),
-        "last_active": datetime.utcnow(),
+        "title": new_title,
+        "history": [],
+        "created_at": now,
+        "last_active": now,
     }
     _sessions[new_id] = sess
     return new_id, sess
@@ -62,6 +116,7 @@ def _get_or_create_session(session_id: Optional[str], title: Optional[str] = Non
 
 class CreateSessionRequest(BaseModel):
     title: Optional[str] = "New Conversation"
+
 
 
 class RenameSessionRequest(BaseModel):
@@ -761,27 +816,44 @@ def rule_based_chat(message: str, db: Session, history: list = None) -> str:
 @router.post("", summary="Chat with the Company Brain OS Intelligence Assistant")
 async def chat(req: ChatRequest, db: Session = Depends(get_db)):
     """
-    Stateful AI chat with deep NLP & LLM reasoning.
+    Stateful AI chat with deep NLP, RAG, and LLM reasoning.
     Supports Google Gemini, OpenAI GPT-4o, Anthropic Claude, and built-in Cognitive Reasoner.
+    Persists conversations to database.
     """
-    session_id, sess = _get_or_create_session(req.session_id)
+    session_id, sess = _get_or_create_session(db, req.session_id)
     history = sess["history"]
 
     # Auto-generate meaningful session title from first user query if default
     if sess.get("title") in (None, "New Conversation", "") and req.message:
         clean_msg = req.message.strip().replace("\n", " ")
-        if len(clean_msg) > 42:
-            sess["title"] = clean_msg[:40] + "…"
-        else:
-            sess["title"] = clean_msg
+        new_title = (clean_msg[:40] + "…") if len(clean_msg) > 42 else clean_msg
+        sess["title"] = new_title
+        db_s = db.query(ChatSessionModel).filter(ChatSessionModel.id == session_id).first()
+        if db_s:
+            db_s.title = new_title
 
-    now_iso = datetime.now().astimezone().isoformat(timespec="seconds")
+    now = datetime.utcnow()
+    now_iso = now.isoformat()
 
-    # Record the incoming user message
-    history.append({"role": "user", "text": req.message, "timestamp": now_iso})
+    # 1. Record & persist user message
+    user_msg_entry = {
+        "role": "user",
+        "text": req.message,
+        "timestamp": now_iso
+    }
+    history.append(user_msg_entry)
+    
+    db_user_msg = ChatMessageModel(
+        id=str(uuid.uuid4()),
+        session_id=session_id,
+        role="user",
+        text=req.message,
+        timestamp=now
+    )
+    db.add(db_user_msg)
 
-    # Call the advanced NLPChatEngine (Live LLM or Cognitive Reasoner)
-    reply, engine_used = await NLPChatEngine.chat(
+    # 2. Call NLPChatEngine with RAG retrieval
+    reply, engine_used, citations = await NLPChatEngine.chat(
         message=req.message,
         db=db,
         history=history,
@@ -790,22 +862,156 @@ async def chat(req: ChatRequest, db: Session = Depends(get_db)):
         model=req.model
     )
 
-    # Persist the bot reply
-    history.append({"role": "bot", "text": reply, "timestamp": now_iso, "engine": engine_used})
+    # 3. Record & persist bot reply
+    bot_now = datetime.utcnow()
+    bot_now_iso = bot_now.isoformat()
+    
+    bot_msg_entry = {
+        "role": "bot",
+        "text": reply,
+        "timestamp": bot_now_iso,
+        "engine": engine_used,
+        "sources": citations
+    }
+    history.append(bot_msg_entry)
 
-    # Trim to max messages
+    db_bot_msg = ChatMessageModel(
+        id=str(uuid.uuid4()),
+        session_id=session_id,
+        role="bot",
+        text=reply,
+        timestamp=bot_now,
+        engine=engine_used,
+    )
+    db_bot_msg.sources = citations
+    db.add(db_bot_msg)
+
+    # Update session metadata in DB
+    db_s = db.query(ChatSessionModel).filter(ChatSessionModel.id == session_id).first()
+    if db_s:
+        db_s.message_count = len(history)
+        db_s.last_active = bot_now
+    db.commit()
+
     if len(history) > MAX_MSG_PER_SESS:
         sess["history"] = history[-MAX_MSG_PER_SESS:]
 
     return {
         "reply": reply,
+        "engine_used": engine_used,
         "engine": engine_used,
         "session_id": session_id,
         "title": sess.get("title", "Conversation"),
         "message_count": len(sess["history"]),
-        "timestamp": now_iso,
-        "sources": ["conflicts", "events", "workflows", "audit_logs", "agents"]
+        "timestamp": bot_now_iso,
+        "sources": citations or ["conflicts", "events", "workflows", "audit_logs", "agents"]
     }
+
+
+@router.post("/stream", summary="Real-Time Server-Sent Events (SSE) chat streaming")
+async def chat_stream_endpoint(req: ChatRequest, db: Session = Depends(get_db)):
+    """
+    Real-Time SSE Streaming Chat Endpoint.
+    Yields data: {"chunk": "token...", "done": false} as tokens generate.
+    Yields data: {"done": true, "engine": "...", "sources": [...], "full_text": "..."} upon completion.
+    Persists history to database.
+    """
+    session_id, sess = _get_or_create_session(db, req.session_id)
+    history = sess["history"]
+
+    # Auto-generate title if default
+    if sess.get("title") in (None, "New Conversation", "") and req.message:
+        clean_msg = req.message.strip().replace("\n", " ")
+        new_title = (clean_msg[:40] + "…") if len(clean_msg) > 42 else clean_msg
+        sess["title"] = new_title
+        db_s = db.query(ChatSessionModel).filter(ChatSessionModel.id == session_id).first()
+        if db_s:
+            db_s.title = new_title
+            db.commit()
+
+    now = datetime.utcnow()
+    user_msg_entry = {"role": "user", "text": req.message, "timestamp": now.isoformat()}
+    history.append(user_msg_entry)
+
+    # Persist user message to DB
+    db_user_msg = ChatMessageModel(
+        id=str(uuid.uuid4()),
+        session_id=session_id,
+        role="user",
+        text=req.message,
+        timestamp=now
+    )
+    db.add(db_user_msg)
+    db.commit()
+
+    async def sse_event_generator():
+        accumulated_text = ""
+        engine_used = "cognitive-nlp-engine"
+        sources = []
+
+        try:
+            async for raw_json_str in NLPChatEngine.chat_stream(
+                message=req.message,
+                db=db,
+                history=history,
+                provider=req.provider,
+                api_key=req.api_key,
+                model=req.model
+            ):
+                payload = json.loads(raw_json_str)
+                if not payload.get("done"):
+                    accumulated_text += payload.get("chunk", "")
+                    yield f"data: {raw_json_str}\n\n"
+                else:
+                    engine_used = payload.get("engine", "cognitive-nlp-engine")
+                    sources = payload.get("sources", [])
+                    accumulated_text = payload.get("full_text", accumulated_text)
+
+                    # Persist completed response to DB
+                    bot_now = datetime.utcnow()
+                    bot_msg_entry = {
+                        "role": "bot",
+                        "text": accumulated_text,
+                        "timestamp": bot_now.isoformat(),
+                        "engine": engine_used,
+                        "sources": sources
+                    }
+                    history.append(bot_msg_entry)
+
+                    db_bot_msg = ChatMessageModel(
+                        id=str(uuid.uuid4()),
+                        session_id=session_id,
+                        role="bot",
+                        text=accumulated_text,
+                        timestamp=bot_now,
+                        engine=engine_used
+                    )
+                    db_bot_msg.sources = sources
+                    db.add(db_bot_msg)
+
+                    db_s = db.query(ChatSessionModel).filter(ChatSessionModel.id == session_id).first()
+                    if db_s:
+                        db_s.message_count = len(history)
+                        db_s.last_active = bot_now
+                    db.commit()
+
+                    # Yield final enriched done packet with session metadata
+                    completion_payload = {
+                        "done": True,
+                        "session_id": session_id,
+                        "title": sess.get("title", "Conversation"),
+                        "engine": engine_used,
+                        "sources": sources,
+                        "full_text": accumulated_text,
+                        "timestamp": bot_now.isoformat()
+                    }
+                    yield f"data: {json.dumps(completion_payload)}\n\n"
+
+        except Exception as e:
+            err_payload = {"done": True, "error": str(e), "chunk": f"\n⚠️ Error: {str(e)}"}
+            yield f"data: {json.dumps(err_payload)}\n\n"
+
+    return StreamingResponse(sse_event_generator(), media_type="text/event-stream")
 
 
 @router.get("/models", summary="List supported NLP & LLM intelligence engines")
@@ -850,38 +1056,42 @@ def get_supported_models():
 
 
 @router.post("/sessions/new", summary="Create a new conversation session")
-def create_new_session(req: Optional[CreateSessionRequest] = None):
+def create_new_session(req: Optional[CreateSessionRequest] = None, db: Session = Depends(get_db)):
     """Starts a clean, new conversation session and returns its ID and metadata."""
     title = req.title if req and req.title else "New Conversation"
-    session_id, sess = _get_or_create_session(None, title=title)
+    session_id, sess = _get_or_create_session(db, None, title=title)
     return {
         "session_id": session_id,
         "title": sess["title"],
         "message_count": len(sess["history"]),
-        "created_at": sess["created_at"].isoformat(),
-        "last_active": sess["last_active"].isoformat(),
+        "created_at": sess["created_at"].isoformat() if isinstance(sess["created_at"], datetime) else str(sess["created_at"]),
+        "last_active": sess["last_active"].isoformat() if isinstance(sess["last_active"], datetime) else str(sess["last_active"]),
         "history": sess["history"]
     }
 
 
 @router.get("/sessions", summary="List all saved conversation sessions")
-def list_sessions():
-    """Returns all active/saved conversations with previews and timestamps."""
+def list_sessions(db: Session = Depends(get_db)):
+    """Returns all active/saved conversations with previews and timestamps from DB."""
     _purge_expired()
+    
+    # Query all non-archived sessions from DB
+    db_sessions = db.query(ChatSessionModel).filter(ChatSessionModel.is_archived == False).order_by(ChatSessionModel.last_active.desc()).all()
+    
     sessions_list = []
-    for sid, s in reversed(_sessions.items()):
-        last_text = ""
-        if s["history"]:
-            last_msg = s["history"][-1]
-            last_text = last_msg.get("text", "")[:75]
+    for s in db_sessions:
+        last_msg = db.query(ChatMessageModel).filter(ChatMessageModel.session_id == s.id).order_by(ChatMessageModel.timestamp.desc()).first()
+        preview_text = (last_msg.text[:75] + "…") if last_msg and len(last_msg.text) > 75 else (last_msg.text if last_msg else "")
+        
         sessions_list.append({
-            "session_id": sid,
-            "title": s.get("title", "Conversation"),
-            "message_count": len(s["history"]),
-            "preview": last_text,
-            "created_at": s["created_at"].isoformat(),
-            "last_active": s["last_active"].isoformat(),
+            "session_id": s.id,
+            "title": s.title,
+            "message_count": s.message_count,
+            "preview": preview_text,
+            "created_at": s.created_at.isoformat() if isinstance(s.created_at, datetime) else str(s.created_at),
+            "last_active": s.last_active.isoformat() if isinstance(s.last_active, datetime) else str(s.last_active),
         })
+
     return {
         "total": len(sessions_list),
         "sessions": sessions_list
@@ -889,34 +1099,49 @@ def list_sessions():
 
 
 @router.get("/session/{session_id}", summary="Get full conversation history for a session")
-def get_session(session_id: str):
-    """Returns the full message history for a chat session."""
-    if session_id not in _sessions:
-        raise HTTPException(status_code=404, detail="Session not found or expired.")
-    sess = _sessions[session_id]
+def get_session(session_id: str, db: Session = Depends(get_db)):
+    """Returns the full message history for a chat session from DB."""
+    session_id, sess = _get_or_create_session(db, session_id)
     return {
         "session_id": session_id,
         "title": sess.get("title", "Conversation"),
         "message_count": len(sess["history"]),
-        "created_at": sess["created_at"].isoformat(),
-        "last_active": sess["last_active"].isoformat(),
+        "created_at": sess["created_at"].isoformat() if isinstance(sess["created_at"], datetime) else str(sess["created_at"]),
+        "last_active": sess["last_active"].isoformat() if isinstance(sess["last_active"], datetime) else str(sess["last_active"]),
         "history": sess["history"]
     }
 
 
 @router.patch("/session/{session_id}", summary="Rename a chat session")
-def rename_session(session_id: str, req: RenameSessionRequest):
-    """Renames an existing chat session."""
-    if session_id not in _sessions:
+def rename_session(session_id: str, req: RenameSessionRequest, db: Session = Depends(get_db)):
+    """Renames an existing chat session in memory and DB."""
+    db_s = db.query(ChatSessionModel).filter(ChatSessionModel.id == session_id).first()
+    if not db_s:
         raise HTTPException(status_code=404, detail="Session not found.")
-    _sessions[session_id]["title"] = req.title.strip()
-    return {"ok": True, "session_id": session_id, "title": _sessions[session_id]["title"]}
+    
+    clean_title = req.title.strip()
+    db_s.title = clean_title
+    db.commit()
+
+    if session_id in _sessions:
+        _sessions[session_id]["title"] = clean_title
+
+    return {"ok": True, "session_id": session_id, "title": clean_title}
 
 
 @router.delete("/session/{session_id}", summary="Delete a chat session entirely")
-def delete_session(session_id: str):
-    """Deletes a conversation session completely from server memory."""
+def delete_session(session_id: str, db: Session = Depends(get_db)):
+    """Deletes a conversation session completely from server memory and database."""
+    deleted = False
+    db_s = db.query(ChatSessionModel).filter(ChatSessionModel.id == session_id).first()
+    if db_s:
+        db.delete(db_s)
+        db.commit()
+        deleted = True
+
     if session_id in _sessions:
         del _sessions[session_id]
-        return {"ok": True, "session_id": session_id, "deleted": True}
-    return {"ok": False, "session_id": session_id, "deleted": False}
+        deleted = True
+
+    return {"ok": deleted, "session_id": session_id, "deleted": deleted}
+

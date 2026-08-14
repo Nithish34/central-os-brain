@@ -19,9 +19,10 @@ def main() -> None:
         "app.main:app",
         host=host,
         port=port,
-        reload=False,
+        reload=True,
         log_level="info"
     )
+
 
 
 if __name__ == "__main__":
