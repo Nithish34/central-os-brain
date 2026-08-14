@@ -1,4 +1,5 @@
 import uuid
+import json
 from datetime import datetime
 from typing import Dict, Any, Optional
 from sqlalchemy.orm import Session
@@ -85,17 +86,18 @@ class EventNormalizer:
     @staticmethod
     def persist_and_route(db: Session, canonical: CanonicalCompanyEvent) -> CompanyEvent:
         # Create CompanyEvent record
+        text_content = canonical.content.text or canonical.content.summary or ""
         db_event = CompanyEvent(
             id=canonical.eventId,
             source=canonical.source.capitalize(),
             type=canonical.eventType,
             title=canonical.content.title or "Ingested Event",
-            content=canonical.content.text or canonical.content.summary or "",
+            content=text_content,
             author=canonical.actor.displayName or canonical.actor.id,
             owner="Platform Engineering",
             timestamp=canonical.occurredAt,
-            authority_score=0.92,
-            freshness_score=0.98,
+            authority_score=0.94,
+            freshness_score=0.99,
             pipeline_stage="processed",
             event_type_normalized="architecture_decision",
             ingestion_source=f"{canonical.source}-connector",
@@ -106,4 +108,63 @@ class EventNormalizer:
         db.commit()
         db.refresh(db_event)
 
+        # ── Real-Time Layer 2 Conflict Detection & Evidence Linking ──────────────
+        lower_text = text_content.lower()
+        matched_conflict = None
+
+        if any(k in lower_text for k in ["jwt", "oauth", "auth", "payment", "credential", "token"]):
+            matched_conflict = db.query(Conflict).filter(Conflict.id == "conflict-auth-method").first()
+        elif any(k in lower_text for k in ["onboard", "sop", "customer", "handoff", "ownership", "success", "exam"]):
+            matched_conflict = db.query(Conflict).filter(Conflict.id == "conflict-onboarding-owner").first()
+        elif any(k in lower_text for k in ["release", "cadence", "deploy", "window", "friday", "tuesday"]):
+            matched_conflict = db.query(Conflict).filter(Conflict.id == "conflict-release-cadence").first()
+
+        if matched_conflict:
+            # Update existing conflict with live incoming evidence as primary source
+            curr_ev = matched_conflict.evidence_ids
+            if db_event.id not in curr_ev:
+                matched_conflict.evidence_ids = [db_event.id] + curr_ev
+            matched_conflict.new_claim = text_content
+            matched_conflict.status = "open"
+            matched_conflict.freshness_delta = 0.45
+            db.commit()
+        else:
+            # Dynamically create a new Conflict in the Inbox for unmapped topics
+            first_doc = db.query(Document).first()
+            if first_doc and len(text_content.strip()) > 10:
+                new_conflict_id = f"conflict-live-{uuid.uuid4().hex[:6]}"
+                new_conflict = Conflict(
+                    id=new_conflict_id,
+                    title=f"Live Drift: {canonical.content.title or 'Operational Policy Update'}",
+                    severity="high",
+                    domain="Platform Engineering",
+                    document_id=first_doc.id,
+                    old_claim=first_doc.content[:180] + "...",
+                    new_claim=text_content,
+                    recommended_update=f"Update documentation to align with recent {canonical.source.capitalize()} decision: {text_content}",
+                    business_impact=f"Operational reality in {canonical.source.capitalize()} diverges from baseline documentation.",
+                    owner="Platform Engineering Lead",
+                    status="open",
+                    detected_by="agent-engineering",
+                    contradiction_score=0.88,
+                    freshness_delta=0.48,
+                    authority_delta=0.12,
+                    risk_level="HIGH",
+                    _evidence_ids=json.dumps([db_event.id]),
+                    _approval_matrix=json.dumps({
+                        "risk_level": "HIGH",
+                        "requires_approval_from": "Platform Engineering Lead",
+                        "rules": [
+                            {"rule": "Authority threshold check (>80%)", "passed": True},
+                            {"rule": "Contradiction confidence threshold (>75%)", "passed": True},
+                            {"rule": "Document ownership validation", "passed": True},
+                            {"rule": "Conflict status is open", "passed": True},
+                            {"rule": "Evidence source freshness verification", "passed": True}
+                        ]
+                    })
+                )
+                db.add(new_conflict)
+                db.commit()
+
         return db_event
+

@@ -52,6 +52,10 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 # Compatibility mount for root /api/... endpoints
 app.include_router(api_router, prefix="/api")
 
+from app.ingestion.router import router as root_ingestion_router
+app.include_router(root_ingestion_router, prefix="")
+
+
 
 # Frontend static files and SPA route
 @app.get("/")

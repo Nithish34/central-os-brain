@@ -4,11 +4,11 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Company Brain OS — Self-Healing Enterprise Knowledge</title>
-    <meta name="description" content="Company Brain OS — Layers 0-3: Intelligence Core, Processing Pipeline, Data Foundation, and Execution Layer for self-healing enterprise knowledge." />
+    <meta name="description" content="Self-healing organizational memory that detects when official documentation contradicts operational reality, presents evidence for human approval, and orchestrates automated enterprise workflows." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/styles.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/styles.css?v=1.4.0" />
   </head>
   <body>
     <div class="app">
@@ -19,18 +19,25 @@
           <div class="brand-mark" aria-hidden="true">CB</div>
           <div>
             <strong>Company Brain</strong>
-            <span>Self-Healing OS</span>
+            <span>Enterprise OS</span>
           </div>
         </div>
 
-        <p class="nav-label">Your Layers (0 – 3)</p>
+        <p class="nav-label">Core Workspace</p>
         <nav class="nav">
-          <a href="#command" id="nav-command" class="active" aria-current="page">
+          <a href="#chat" id="nav-chat" class="active" aria-current="page">
             <span class="nav-icon">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" fill="currentColor"/><rect x="9" y="1" width="6" height="6" rx="1.5" fill="currentColor" opacity="0.5"/><rect x="1" y="9" width="6" height="6" rx="1.5" fill="currentColor" opacity="0.5"/><rect x="9" y="9" width="6" height="6" rx="1.5" fill="currentColor" opacity="0.5"/></svg>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1.5C4.4 1.5 1.5 4.4 1.5 8c0 1.2.3 2.3.9 3.3L1.5 14.5l3.4-.9c1 .5 2 0.9 3.1 0.9 3.6 0 6.5-2.9 6.5-6.5S11.6 1.5 8 1.5z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><circle cx="5.5" cy="8" r="1" fill="currentColor"/><circle cx="8" cy="8" r="1" fill="currentColor"/><circle cx="10.5" cy="8" r="1" fill="currentColor"/></svg>
             </span>
-            Command Center
-            <span class="layer-chip l3">Overview</span>
+            AI Command Center
+            <span class="layer-chip l2" style="margin-left:auto;font-size:10px;padding:2px 6px;">CORE</span>
+          </a>
+          <a href="#inbox" id="nav-inbox">
+            <span class="nav-icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="2" width="14" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M1 6h4l2 3h2l2-3h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+            Conflict Inbox
+            <span id="conflictBadge" class="badge open" style="margin-left:auto;font-size:10px;padding:2px 7px;">3</span>
           </a>
           <a href="#intelligence" id="nav-intelligence">
             <span class="nav-icon">
@@ -43,54 +50,59 @@
             <span class="nav-icon">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="3" width="4" height="10" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="6" y="5" width="4" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="11" y="4" width="4" height="8" rx="1" stroke="currentColor" stroke-width="1.5"/></svg>
             </span>
-            Pipeline
+            Processing Pipeline
             <span class="layer-chip l3">L3</span>
-          </a>
-          <a href="#conflicts" id="nav-conflicts">
-            <span class="nav-icon">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2L14 13H2L8 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M8 6V9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="11.5" r="0.75" fill="currentColor"/></svg>
-            </span>
-            Conflicts
-            <span id="conflictBadge" class="badge open" style="margin-left:auto;font-size:10px;padding:2px 7px;"></span>
           </a>
           <a href="#execution" id="nav-execution">
             <span class="nav-icon">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </span>
-            Execution
+            Execution Workflows
             <span class="layer-chip l0">L0</span>
           </a>
           <a href="#audit" id="nav-audit">
             <span class="nav-icon">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="1.5" width="12" height="13" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M5 5.5H11M5 8.5H11M5 11.5H8" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/></svg>
             </span>
-            Audit Logs
+            Audit &amp; Compliance
           </a>
         </nav>
 
-        <p class="nav-label" style="margin-top:8px;">Teammate's Layers</p>
-        <div class="teammate-layers">
-          <div class="teammate-layer">
-            <span class="layer-chip l6">L6</span>
-            <span>Web Dashboard UI</span>
-          </div>
-          <div class="teammate-layer">
+        <p class="nav-label" style="margin-top:14px;">Platform &amp; Governance</p>
+        <nav class="nav">
+          <a href="#integrations" id="nav-integrations">
+            <span class="nav-icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="4" cy="4" r="2.5" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="12" r="2.5" stroke="currentColor" stroke-width="1.5"/><path d="M6 6l4 4" stroke="currentColor" stroke-width="1.5"/></svg>
+            </span>
+            Integrations
             <span class="layer-chip l5">L5</span>
-            <span>API Gateway (FastAPI)</span>
-          </div>
-          <div class="teammate-layer">
-            <span class="layer-chip l4">L4</span>
-            <span>Ingestion + Connectors</span>
-          </div>
-        </div>
+          </a>
+          <a href="#settings" id="nav-settings">
+            <span class="nav-icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2.5" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M3.4 12.6l1.4-1.4M11.2 4.8l1.4-1.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </span>
+            Settings &amp; Policy
+          </a>
+          <a href="#profile" id="nav-profile">
+            <span class="nav-icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M2.5 14c0-3 2.5-4.5 5.5-4.5s5.5 1.5 5.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </span>
+            Profile &amp; RBAC
+          </a>
+        </nav>
 
-        <div class="sidebar-note">
-          <span><span class="dot" aria-hidden="true"></span>Demo Mode</span>
-          Simulating Layers 0–3. Synthetic data from Slack, GitHub, Notion, Jira connectors.
+        <!-- User Snippet -->
+        <div class="user-snippet">
+          <div class="user-avatar">EA</div>
+          <div class="user-info">
+            <strong>Enterprise Admin</strong>
+            <span>Acme Corp Demo</span>
+          </div>
+          <span class="role-badge">ADMIN</span>
         </div>
       </aside>
 
-      <!-- ── Main Content ──────────────────────────────────── -->
+      <!-- ── Main Content Area ──────────────────────────────── -->
       <main class="main" id="main-content">
 
         <!-- Topbar -->
@@ -98,62 +110,194 @@
           <div class="topbar-left">
             <div class="topbar-logo">
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="#22c55e" stroke-width="1.5"/><path d="M4 7l2 2 4-4" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              National Hackathon MVP
+              Enterprise Brain Live
             </div>
             <div class="topbar-divider"></div>
             <div>
-              <p class="eyebrow">Layers 0–3: Intelligence Core · Pipeline · Data · Execution</p>
-              <h1>Company Brain OS</h1>
+              <p class="eyebrow" id="viewEyebrow">Autonomous Reasoning &amp; Action</p>
+              <h1 id="viewTitle">AI Command Center</h1>
             </div>
           </div>
           <div class="top-actions">
-            <button id="resetButton" class="ghost-button" type="button" title="Reset all demo state">
+            <button id="resetButton" class="ghost-button" type="button" title="Reset all demo state to baseline">
               <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5A4.5 4.5 0 1 1 6.5 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M2 3.5V6.5H5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
               Reset Demo
             </button>
-            <span id="apiStatus" class="status-pill" role="status" aria-live="polite">Connecting</span>
+            <span id="apiStatus" class="status-pill ok" role="status" aria-live="polite">Live</span>
           </div>
         </header>
 
-        <!-- ── Command Center ────────────────────────────── -->
-        <section id="command" class="section" aria-labelledby="command-heading">
-          <div class="section-heading">
-            <div>
-              <p class="eyebrow">System Overview</p>
-              <h2 id="command-heading">Knowledge Health Dashboard</h2>
-            </div>
-            <p id="lastScan" class="muted" aria-live="polite">Scanning…</p>
-          </div>
-          <div class="metrics" role="list">
-            <div class="metric critical" role="listitem">
-              <div class="metric-icon">🧠</div>
-              <label>Knowledge Health</label>
-              <strong id="knowledgeHealth">--%</strong>
-            </div>
-            <div class="metric danger" role="listitem">
-              <div class="metric-icon">⚠️</div>
-              <label>Open Conflicts</label>
-              <strong id="openConflicts">--</strong>
-            </div>
-            <div class="metric info" role="listitem">
-              <div class="metric-icon">🤖</div>
-              <label>Active Agents</label>
-              <strong id="activeAgents">--</strong>
-            </div>
-            <div class="metric success" role="listitem">
-              <div class="metric-icon">⚡</div>
-              <label>Execution Actions</label>
-              <strong id="workflowCount">--</strong>
+        <!-- ══════════════════════════════════════════════════════ -->
+        <!-- VIEW 0: AI COMMAND CENTER (FULL SCREEN DEFAULT VIEW)   -->
+        <!-- ══════════════════════════════════════════════════════ -->
+        <section id="view-chat" class="view-panel active" style="padding-bottom:12px;">
+          <div class="fs-chat-wrapper">
+
+            <!-- Sidebar: Conversation History & Saved Chats -->
+            <aside class="fs-chat-sidebar">
+              <div class="fs-sidebar-top">
+                <button id="fsNewChatBtn" class="fs-new-chat-btn" type="button">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  New Conversation
+                </button>
+                <input id="fsSessionSearch" class="fs-search-input" type="text" placeholder="Search conversations…" autocomplete="off" />
+              </div>
+
+              <!-- List of Saved Sessions -->
+              <div id="fsSessionList" class="fs-session-list" role="list">
+                <!-- Dynamically rendered -->
+              </div>
+
+              <div class="fs-sidebar-footer">
+                <span style="display:flex;align-items:center;gap:6px;"><span class="chat-online-dot"></span> 5 Live Sources</span>
+                <span id="fsSessionCountBadge" style="font-weight:600;">-- chats</span>
+              </div>
+            </aside>
+
+            <!-- Main: Full-screen Chat Canvas -->
+            <div class="fs-chat-main">
+              <!-- Header Bar -->
+              <div class="fs-chat-header">
+                <div class="fs-header-left">
+                  <div class="fs-header-avatar">🧠</div>
+                  <div>
+                    <div id="fsChatHeaderTitle" class="fs-header-title">AI Command Center &amp; Copilot</div>
+                    <div id="fsChatHeaderStatus" class="fs-header-status">
+                      <span class="chat-online-dot"></span> Connected to Conflict Inbox, Ingestion Pipeline &amp; Layer 0 Execution
+                    </div>
+                  </div>
+                </div>
+                <div class="fs-header-actions">
+                  <select id="chatModelSelect" class="form-select" style="padding:4px 9px;font-size:12px;width:auto;height:30px;background:var(--panel-soft);border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;" title="Select AI NLP / LLM Reasoning Engine">
+                    <option value="auto">⚡ Auto (Gemini / Cognitive NLP)</option>
+                    <option value="cognitive">🧠 Cognitive NLP Reasoner (Built-in)</option>
+                    <option value="gemini">✨ Google Gemini 1.5 Flash</option>
+                    <option value="openai">🤖 OpenAI GPT-4o Mini</option>
+                    <option value="anthropic">🔮 Anthropic Claude 3.5</option>
+                  </select>
+                  <button id="fsClearChatBtn" class="ghost-button" type="button" title="Clear messages in current chat">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    Clear
+                  </button>
+                  <a href="#inbox" class="ghost-button" style="text-decoration:none;" title="Open Conflict Inbox">
+                    <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><rect x="1" y="2" width="14" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M1 6h4l2 3h2l2-3h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                    Inbox
+                  </a>
+                </div>
+              </div>
+
+              <!-- Message Stream -->
+              <div id="fsChatMessages" class="fs-chat-messages" role="log" aria-live="polite">
+                <div class="chat-msg bot">
+                  <div class="chat-bubble">
+                    👋 Welcome to the <strong>Company Brain OS AI Command Center</strong>.<br/><br/>
+                    I have full operational awareness and execution authority across your organization's data:
+                    <ul style="margin:8px 0;padding-left:18px;line-height:1.7;">
+                      <li><strong>Conflict Inbox:</strong> Inspect, explain, approve, or reject document contradictions.</li>
+                      <li><strong>Processing Pipeline:</strong> Search live events from Slack, GitHub, Gmail, and Teams.</li>
+                      <li><strong>Execution Engine:</strong> Trigger automated Layer 0 updates to Jira, Slack, &amp; Knowledge Base.</li>
+                      <li><strong>Compliance:</strong> Query real-time audit logs, governance rules, and AI agent detections.</li>
+                    </ul>
+                    💡 <em>Ask a question or issue a command below, or click any quick-action chip.</em>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Categorized Suggestions Matrix -->
+              <div id="fsChatSuggestions" class="fs-chat-suggestions">
+                <span class="fs-sugg-category">⚡ Actions:</span>
+                <button class="chat-suggestion-chip" onclick="window.fsSendSuggestion('Approve all open conflicts')">✅ Approve all open</button>
+                <button class="chat-suggestion-chip" onclick="window.fsSendSuggestion('Approve the first conflict')">✅ Approve first</button>
+                <button class="chat-suggestion-chip" onclick="window.fsSendSuggestion('Reject the first conflict')">❌ Reject first</button>
+                <button class="chat-suggestion-chip" onclick="window.fsSendSuggestion('Reopen the third conflict')">🟠 Reopen third</button>
+                
+                <span class="fs-sugg-category" style="margin-left:8px;">🔍 Query:</span>
+                <button class="chat-suggestion-chip" onclick="window.fsSendSuggestion('Show me all open conflicts')">📋 Open conflicts</button>
+                <button class="chat-suggestion-chip" onclick="window.fsSendSuggestion('Explain the first conflict in detail')">🔬 Detail 1st conflict</button>
+                <button class="chat-suggestion-chip" onclick="window.fsSendSuggestion('Show recent pipeline events')">⚙️ Pipeline events</button>
+                <button class="chat-suggestion-chip" onclick="window.fsSendSuggestion('Who approved the last conflict?')">📑 Audit log</button>
+                <button class="chat-suggestion-chip" onclick="window.fsSendSuggestion('Give me a system summary')">📊 System overview</button>
+              </div>
+
+              <!-- Full-screen Input Bar -->
+              <div class="fs-chat-input-row">
+                <div class="fs-input-box">
+                  <input id="fsChatInput" class="fs-input" type="text" placeholder="Ask anything or command actions (e.g., 'Approve first conflict', 'What events arrived from Slack?')…" autocomplete="off" />
+                  <button id="fsChatSendBtn" class="fs-send-btn" type="button" aria-label="Send command">
+                    <span>Send</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </button>
+                </div>
+                <div class="fs-input-hints">
+                  <span>↵ Press <strong>Enter</strong> to send &nbsp;&middot;&nbsp; All commands trigger live database state updates</span>
+                  <span>🔒 Enterprise RBAC: <strong>Admin Full Authority</strong></span>
+                </div>
+              </div>
+
             </div>
           </div>
         </section>
 
-        <!-- ── Layer 2: Intelligence Core ───────────────── -->
-        <section id="intelligence" class="section" aria-labelledby="intel-heading">
-          <div class="section-heading">
+        <!-- ══════════════════════════════════════════════════════ -->
+        <!-- VIEW 1: CONFLICT INBOX (HERO VIEW)                    -->
+        <!-- ══════════════════════════════════════════════════════ -->
+        <section id="view-inbox" class="view-panel">
+          <!-- Summary Metric Cards -->
+          <div class="metrics-row">
+            <div class="metric-card critical">
+              <div class="mc-icon">🧠</div>
+              <div>
+                <label>Knowledge Health</label>
+                <strong id="knowledgeHealth">--%</strong>
+              </div>
+            </div>
+            <div class="metric-card danger">
+              <div class="mc-icon">⚠️</div>
+              <div>
+                <label>Open Conflicts</label>
+                <strong id="openConflicts">--</strong>
+              </div>
+            </div>
+            <div class="metric-card info">
+              <div class="mc-icon">🤖</div>
+              <div>
+                <label>Active Domain Agents</label>
+                <strong id="activeAgents">--</strong>
+              </div>
+            </div>
+            <div class="metric-card success">
+              <div class="mc-icon">⚡</div>
+              <div>
+                <label>Automated Workflows</label>
+                <strong id="workflowCount">--</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Master-Detail Conflict Triage Grid -->
+          <div class="inbox-layout">
+            <div class="inbox-list-col">
+              <div class="col-head">
+                <h3>Detected Drift &amp; Conflicts</h3>
+                <span class="muted" id="conflictCountLabel">3 open</span>
+              </div>
+              <div id="conflictList" class="conflict-list" role="list"></div>
+            </div>
+
+            <article id="conflictDetail" class="inbox-detail-col" aria-label="Conflict detail">
+              <div class="empty-state">Select a conflict to review evidence and approve a fix.</div>
+            </article>
+          </div>
+        </section>
+
+        <!-- ══════════════════════════════════════════════════════ -->
+        <!-- VIEW 2: INTELLIGENCE CORE (LAYER 2)                   -->
+        <!-- ══════════════════════════════════════════════════════ -->
+        <section id="view-intelligence" class="view-panel">
+          <div class="view-header-row">
             <div>
-              <p class="eyebrow">Layer 2 — Intelligence Core</p>
-              <h2 id="intel-heading">RAG Engine · Knowledge Graph · Multi-Agent System</h2>
+              <p class="eyebrow">Layer 2 — Autonomous AI Reasoning</p>
+              <h2>Intelligence Core &amp; Multi-Agent System</h2>
             </div>
             <span class="layer-chip l2 lg">Layer 2</span>
           </div>
@@ -161,76 +305,301 @@
           <!-- Sub-system stats -->
           <div id="intelStats" class="intel-stats-row"></div>
 
-          <!-- Agent cards -->
-          <div style="margin-top:18px;">
-            <p class="subsection-label">Multi-Agent System</p>
+          <!-- Multi-Agent Grid -->
+          <div style="margin-top:24px;">
+            <p class="subsection-label">Domain-Specialized Autonomous Agents</p>
             <div id="agentGrid" class="agent-grid"></div>
+          </div>
+
+          <!-- Company Context Memory Explorer -->
+          <div style="margin-top:24px;">
+            <p class="subsection-label">Organizational Context &amp; Memory Store</p>
+            <div class="table-card">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Context Key</th>
+                    <th>Current Value</th>
+                    <th>Authority</th>
+                  </tr>
+                </thead>
+                <tbody id="contextMemoryTable"></tbody>
+              </table>
+            </div>
           </div>
         </section>
 
-        <!-- ── Layer 3: Processing Pipeline ─────────────── -->
-        <section id="pipeline" class="section" aria-labelledby="pipeline-heading">
-          <div class="section-heading">
+        <!-- ══════════════════════════════════════════════════════ -->
+        <!-- VIEW 3: PROCESSING PIPELINE (LAYER 3)                 -->
+        <!-- ══════════════════════════════════════════════════════ -->
+        <section id="view-pipeline" class="view-panel">
+          <div class="view-header-row">
             <div>
-              <p class="eyebrow">Layer 3 — Processing &amp; Orchestration</p>
-              <h2 id="pipeline-heading">Event Bus · Workers · Router · LangGraph Orchestrator</h2>
+              <p class="eyebrow">Layer 3 — Asynchronous Processing</p>
+              <h2>Event Bus, Celery Workers &amp; LangGraph Orchestrator</h2>
             </div>
             <span class="layer-chip l3 lg">Layer 3</span>
           </div>
 
-          <!-- Pipeline component cards -->
+          <!-- Pipeline stats -->
           <div id="pipelineComponents" class="pipeline-grid"></div>
 
-          <!-- Event stage table -->
-          <div style="margin-top:18px;">
-            <p class="subsection-label">Event Flow — Latest Processed Events</p>
+          <!-- Real-Time Event Stream -->
+          <div style="margin-top:24px;">
+            <div class="col-head">
+              <p class="subsection-label" style="margin:0;">Live Ingested Event Stream (Connectors $\to$ Event Bus)</p>
+              <span class="badge" style="font-family:monospace;">Redis Streams</span>
+            </div>
             <div id="eventStages" class="event-stage-list"></div>
           </div>
         </section>
 
-        <!-- ── Conflicts ─────────────────────────────────── -->
-        <section id="conflicts" class="section two-column" aria-labelledby="conflicts-heading">
-          <div>
-            <div class="section-heading">
-              <div>
-                <p class="eyebrow">Layer 2 — Conflict Detection Engine</p>
-                <h2 id="conflicts-heading">Detected Conflicts</h2>
-              </div>
-            </div>
-            <div id="conflictList" class="conflict-list" role="list"></div>
-          </div>
-
-          <article id="conflictDetail" class="detail-panel" aria-label="Conflict detail">
-            <div class="empty-state">Select a conflict to review evidence and approve a fix.</div>
-          </article>
-        </section>
-
-        <!-- ── Layer 0: Execution ─────────────────────────── -->
-        <section id="execution" class="section" aria-labelledby="execution-heading">
-          <div class="section-heading">
+        <!-- ══════════════════════════════════════════════════════ -->
+        <!-- VIEW 4: EXECUTION WORKFLOWS (LAYER 0)                 -->
+        <!-- ══════════════════════════════════════════════════════ -->
+        <section id="view-execution" class="view-panel">
+          <div class="view-header-row">
             <div>
-              <p class="eyebrow">Layer 0 — Execution Layer</p>
-              <h2 id="execution-heading">Workflow Engine · Action Executor · External Systems</h2>
+              <p class="eyebrow">Layer 0 — Automated Multi-System Action</p>
+              <h2>Execution Timeline &amp; External Connectors</h2>
             </div>
             <span class="layer-chip l0 lg">Layer 0</span>
           </div>
+
           <div id="workflowTimeline" class="timeline" role="list" aria-live="polite"></div>
         </section>
 
-        <!-- ── Audit Logs ─────────────────────────────────── -->
-        <section id="audit" class="section" aria-labelledby="audit-heading">
-          <div class="section-heading">
+        <!-- ══════════════════════════════════════════════════════ -->
+        <!-- VIEW 5: AUDIT & COMPLIANCE LOGS                       -->
+        <!-- ══════════════════════════════════════════════════════ -->
+        <section id="view-audit" class="view-panel">
+          <div class="view-header-row">
             <div>
-              <p class="eyebrow">Cross-Cutting Concern — Audit &amp; Compliance</p>
-              <h2 id="audit-heading">Audit Logs</h2>
+              <p class="eyebrow">Enterprise Governance &amp; Traceability</p>
+              <h2>Immutable Decision Audit Log</h2>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <input type="text" id="auditSearchInput" placeholder="Filter by keyword / actor..." class="search-input" />
             </div>
           </div>
+
           <div id="auditLogs" class="audit-list" role="list" aria-live="polite"></div>
+        </section>
+
+        <!-- ══════════════════════════════════════════════════════ -->
+        <!-- VIEW 6: INTEGRATIONS CATALOG (LAYER 5)                -->
+        <!-- ══════════════════════════════════════════════════════ -->
+        <section id="view-integrations" class="view-panel">
+          <div class="view-header-row">
+            <div>
+              <p class="eyebrow">Layer 5 — Connected Enterprise Sources</p>
+              <h2>Enterprise Connectors &amp; Webhook Catalog</h2>
+            </div>
+            <span class="layer-chip l5 lg">Layer 5</span>
+          </div>
+
+          <div id="integrationsGrid" class="integrations-grid"></div>
+        </section>
+
+        <!-- ══════════════════════════════════════════════════════ -->
+        <!-- VIEW 7: SETTINGS & POLICY SAFETY GATES                -->
+        <!-- ══════════════════════════════════════════════════════ -->
+        <section id="view-settings" class="view-panel">
+          <div class="view-header-row">
+            <div>
+              <p class="eyebrow">Platform Governance &amp; Configuration</p>
+              <h2>Settings &amp; Pre-Approval Risk Gates</h2>
+            </div>
+          </div>
+
+          <div class="settings-grid">
+            <!-- AI Configuration -->
+            <div class="settings-card">
+              <h3>🤖 AI Reasoning &amp; LLM Provider</h3>
+              <p class="settings-desc">Choose the primary language model for contradiction detection and diff synthesis.</p>
+              <div class="form-group">
+                <label>Active LLM Engine</label>
+                <select class="form-select" id="settingLLM">
+                  <option value="gpt-4o-mini" selected>OpenAI (GPT-4o-mini) — Fast &amp; Accurate</option>
+                  <option value="gemini-1.5-pro">Google Gemini 1.5 Pro</option>
+                  <option value="claude-3-5-sonnet">Anthropic Claude 3.5 Sonnet</option>
+                  <option value="standalone">Standalone Local Heuristic Engine</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Embedding Model</label>
+                <input type="text" class="form-input" value="text-embedding-3-small (1536 dims)" readonly />
+              </div>
+              <div class="form-group" style="margin-top:10px;">
+                <label>Custom LLM API Key (Optional)</label>
+                <div style="display:flex;gap:6px;">
+                  <input type="password" id="settingApiKey" class="form-input" placeholder="Paste Gemini / OpenAI / Anthropic Key..." style="flex:1;" />
+                  <button type="button" class="ghost-button" onclick="localStorage.setItem('cbos_custom_llm_key', document.getElementById('settingApiKey').value.trim()); window.showToast('🔑 LLM API Key saved for active session!')">Save</button>
+                </div>
+                <span class="muted" style="font-size:11px;margin-top:3px;display:block;">Leave blank to automatically use the built-in Cognitive NLP Reasoner.</span>
+              </div>
+            </div>
+
+            <!-- Risk Gate Matrix -->
+            <div class="settings-card">
+              <h3>🛡️ Layer 0 Safety &amp; Policy Matrix</h3>
+              <p class="settings-desc">Enforce safety gates before actions are allowed to execute on official documents.</p>
+              <div class="form-group">
+                <label>Minimum Authority Threshold (<span id="thresholdVal">80%</span>)</label>
+                <input type="range" class="form-range" id="settingThreshold" min="60" max="95" value="80" oninput="document.getElementById('thresholdVal').textContent = this.value + '%'" />
+              </div>
+              <div class="form-group-checkbox">
+                <input type="checkbox" id="settingLegal" checked />
+                <label for="settingLegal">Require mandatory Legal/Compliance review on billing policies</label>
+              </div>
+              <div class="form-group-checkbox">
+                <input type="checkbox" id="settingOwnerOnly" checked />
+                <label for="settingOwnerOnly">Strict Owner Approval (Only designated team lead can approve diffs)</label>
+              </div>
+            </div>
+
+            <!-- Webhook Destinations -->
+            <div class="settings-card" style="grid-column: span 2;">
+              <h3>🔔 Alert &amp; Webhook Destinations</h3>
+              <div class="form-group">
+                <label>Slack Critical Drift Alert Webhook</label>
+                <input type="text" class="form-input" value="https://hooks.slack.com/services/T00/B00/XXXXX" />
+              </div>
+              <button class="primary-button" type="button" onclick="window.showToast('✅ Policy &amp; System settings saved successfully!')">Save Configuration</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ══════════════════════════════════════════════════════ -->
+        <!-- VIEW 8: USER PROFILE & RBAC IDENTITY                  -->
+        <!-- ══════════════════════════════════════════════════════ -->
+        <section id="view-profile" class="view-panel">
+          <div class="view-header-row">
+            <div>
+              <p class="eyebrow">Layer 5 — Identity &amp; Role-Based Access</p>
+              <h2>User Profile &amp; Permissions Matrix</h2>
+            </div>
+          </div>
+
+          <div class="profile-layout">
+            <div class="profile-card">
+              <div class="profile-header">
+                <div class="large-avatar">EA</div>
+                <div>
+                  <h3 id="profileName">Enterprise Admin</h3>
+                  <p id="profileEmail" class="muted">admin@companybrain.local</p>
+                  <div style="margin-top:6px;">
+                    <span class="badge" style="background:#22c55e15;color:#22c55e;border:1px solid #22c55e30;">ACTIVE ADMIN</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="profile-meta-list">
+                <div class="pm-item">
+                  <label>Organization ID</label>
+                  <span>org-company-brain-demo</span>
+                </div>
+                <div class="pm-item">
+                  <label>Auth Provider</label>
+                  <span>JWT Bearer (HS256)</span>
+                </div>
+                <div class="pm-item">
+                  <label>Session Expiry</label>
+                  <span>24 Hours</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="profile-card">
+              <h3>Active RBAC Permissions (13 Granted)</h3>
+              <p class="muted" style="font-size:12px;margin-bottom:12px;">Your role grants full read and write execution authority across all layers.</p>
+              <div class="permissions-grid" id="profilePermissions"></div>
+
+              <div style="margin-top:20px;border-top:1px solid var(--border);padding-top:14px;">
+                <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px;">Developer Bearer Token</label>
+                <div class="token-box">
+                  <input type="password" id="bearerTokenInput" value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." readonly class="token-input" />
+                  <button class="ghost-button" type="button" onclick="navigator.clipboard.writeText(document.getElementById('bearerTokenInput').value); window.showToast('📋 Token copied to clipboard!')">Copy</button>
+                </div>
+              </div>
+            </div>
+          </div>
         </section>
 
       </main>
     </div>
 
-    <script src="/app.js"></script>
+    <!-- Toast Notifications Container -->
+    <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+    <!-- ── AI Chat Bot ───────────────────────────────────────── -->
+    <div id="chatWidget" class="chat-widget" aria-label="AI Assistant">
+      <!-- Fab Trigger Button -->
+      <button id="chatFab" class="chat-fab" aria-label="Open AI Assistant" title="Ask Company Brain OS">
+        <svg id="chatFabIconOpen" width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+        </svg>
+        <svg id="chatFabIconClose" width="18" height="18" viewBox="0 0 24 24" fill="none" style="display:none;">
+          <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+        <span class="chat-fab-label">Ask Brain</span>
+        <span id="chatUnreadDot" class="chat-unread-dot" style="display:none;"></span>
+      </button>
+
+      <!-- Chat Panel -->
+      <div id="chatPanel" class="chat-panel" style="display:none;" role="dialog" aria-modal="false" aria-label="Company Brain AI Assistant">
+        <!-- Header -->
+        <div class="chat-header">
+          <div class="chat-header-info">
+            <div class="chat-avatar">🧠</div>
+            <div>
+              <div class="chat-name">Company Brain OS</div>
+              <div class="chat-status"><span class="chat-online-dot"></span> Intelligence Assistant</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px;">
+            <a href="#chat" class="chat-close-btn" style="text-decoration:none;" title="Open in Full Screen" onclick="document.getElementById('chatPanel').style.display='none';">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+            <button class="chat-close-btn" id="chatCloseBtn" aria-label="Close chat">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Messages -->
+        <div id="chatMessages" class="chat-messages" role="log" aria-live="polite">
+          <div class="chat-msg bot">
+            <div class="chat-bubble">
+              👋 Hi! I'm your <strong>Company Brain OS</strong> assistant.<br/><br/>
+              I have live access to your <strong>Conflict Inbox</strong>, <strong>Pipeline Events</strong>, <strong>Execution Workflows</strong>, and <strong>Audit Logs</strong>. Ask me anything!<br/><br/>
+              <span style="opacity:0.7;font-size:12px;">Try: "Show open conflicts" · "What's in the pipeline?" · "System summary"</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Suggestions -->
+        <div class="chat-suggestions">
+          <button class="chat-suggestion-chip" onclick="sendSuggestion('Show me all open conflicts')">📋 Open conflicts</button>
+          <button class="chat-suggestion-chip" onclick="sendSuggestion('Approve all open conflicts')">✅ Approve all open</button>
+          <button class="chat-suggestion-chip" onclick="sendSuggestion('Approve the first conflict')">✅ Approve first</button>
+          <button class="chat-suggestion-chip" onclick="sendSuggestion('Reject the first conflict')">❌ Reject first</button>
+          <button class="chat-suggestion-chip" onclick="sendSuggestion('Give me a system summary')">📊 System summary</button>
+          <button class="chat-suggestion-chip" onclick="sendSuggestion('Show recent pipeline events')">⚙️ Pipeline events</button>
+          <button class="chat-suggestion-chip" onclick="sendSuggestion('Show execution timeline')">⚡ Workflows</button>
+          <button class="chat-suggestion-chip" onclick="sendSuggestion('Who approved the last conflict?')">📑 Audit log</button>
+        </div>
+
+        <!-- Input -->
+        <div class="chat-input-row">
+          <input id="chatInput" class="chat-input" type="text" placeholder="Ask about conflicts, pipeline, agents…" autocomplete="off" />
+          <button id="chatSendBtn" class="chat-send-btn" aria-label="Send message">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script src="/app.js?v=1.4.0"></script>
   </body>
 </html>

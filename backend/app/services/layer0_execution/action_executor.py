@@ -79,6 +79,9 @@ class ActionExecutorService:
                 db.add(action_obj)
                 created_objs.append(action_obj)
             else:
+                existing.created_at = created_at
+                existing.description = data["description"]
+                existing.status = "completed"
                 created_objs.append(existing)
 
         db.commit()

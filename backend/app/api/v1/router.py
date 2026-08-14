@@ -11,6 +11,7 @@ from app.api.v1.endpoints import (
     audit,
     data_foundation,
     demo,
+    chat,
 )
 from app.auth.router import router as auth_router
 from app.integrations.router import router as integrations_router
@@ -41,7 +42,8 @@ api_router.include_router(data_foundation.router, prefix="/data-foundation", tag
 # Layer 0: Execution Engine & Workflows
 api_router.include_router(workflows.router, prefix="/workflows", tags=["Layer 0 — Execution"])
 
-# Cross-Cutting: Audit & Health
+# Cross-Cutting: Audit, Health & AI Chat
 api_router.include_router(audit.router, prefix="/audit-logs", tags=["Cross-Cutting — Audit Logs"])
 api_router.include_router(health.router, tags=["Health"])
 api_router.include_router(demo.router, prefix="/demo", tags=["Demo Management"])
+api_router.include_router(chat.router, prefix="/chat", tags=["AI Assistant"])

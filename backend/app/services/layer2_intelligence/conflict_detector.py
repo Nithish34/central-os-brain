@@ -39,7 +39,9 @@ class ConflictDetectorService:
     @staticmethod
     def enrich_conflict(db: Session, conflict: Conflict) -> Dict[str, Any]:
         document = db.query(Document).filter(Document.id == conflict.document_id).first()
-        evidence_records = db.query(CompanyEvent).filter(CompanyEvent.id.in_(conflict.evidence_ids)).all()
+        raw_records = db.query(CompanyEvent).filter(CompanyEvent.id.in_(conflict.evidence_ids)).all()
+        record_map = {r.id: r for r in raw_records}
+        evidence_records = [record_map[eid] for eid in conflict.evidence_ids if eid in record_map]
         agent = db.query(AgentProfile).filter(AgentProfile.id == conflict.detected_by).first()
 
         confidence = ConflictDetectorService.calculate_confidence(conflict, document, evidence_records)
