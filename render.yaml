@@ -8,7 +8,7 @@ services:
     name: company-brain-os
     runtime: docker
     dockerfilePath: ./Dockerfile
-    plan: standard
+    plan: free
     region: oregon
     healthCheckPath: /api/v1/health
     envVars:
