@@ -10,7 +10,11 @@
     "timestamp": "2026-08-14T09:35:00+05:30",
     "authority_score": 0.92,
     "freshness_score": 0.98,
-    "tags": ["payments", "authentication", "oauth2", "architecture"]
+    "tags": ["payments", "authentication", "oauth2", "architecture"],
+    "pipeline_stage": "processed",
+    "event_type_normalized": "architecture_decision",
+    "ingestion_source": "slack-connector",
+    "vector_indexed": true
   },
   {
     "id": "evt-github-oauth-pr",
@@ -23,7 +27,11 @@
     "timestamp": "2026-08-14T11:10:00+05:30",
     "authority_score": 0.88,
     "freshness_score": 0.96,
-    "tags": ["payments", "authentication", "oauth2", "github"]
+    "tags": ["payments", "authentication", "oauth2", "github"],
+    "pipeline_stage": "processed",
+    "event_type_normalized": "code_change",
+    "ingestion_source": "github-connector",
+    "vector_indexed": true
   },
   {
     "id": "evt-release-cadence",
@@ -36,7 +44,11 @@
     "timestamp": "2026-08-13T16:20:00+05:30",
     "authority_score": 0.89,
     "freshness_score": 0.95,
-    "tags": ["deployment", "release", "qa"]
+    "tags": ["deployment", "release", "qa"],
+    "pipeline_stage": "processed",
+    "event_type_normalized": "process_change",
+    "ingestion_source": "slack-connector",
+    "vector_indexed": true
   },
   {
     "id": "evt-onboarding-squad",
@@ -48,8 +60,12 @@
     "owner": "Revenue Operations",
     "timestamp": "2026-08-12T14:00:00+05:30",
     "authority_score": 0.84,
-    "freshness_score": 0.9,
-    "tags": ["customer", "onboarding", "ownership"]
+    "freshness_score": 0.90,
+    "tags": ["customer", "onboarding", "ownership"],
+    "pipeline_stage": "processed",
+    "event_type_normalized": "ownership_change",
+    "ingestion_source": "notion-connector",
+    "vector_indexed": true
   },
   {
     "id": "evt-incident-clean",
@@ -62,6 +78,10 @@
     "timestamp": "2026-08-13T10:15:00+05:30",
     "authority_score": 0.86,
     "freshness_score": 0.94,
-    "tags": ["incident", "sre", "support"]
+    "tags": ["incident", "sre", "support"],
+    "pipeline_stage": "processed",
+    "event_type_normalized": "policy_validation",
+    "ingestion_source": "jira-connector",
+    "vector_indexed": true
   }
 ]

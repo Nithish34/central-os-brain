@@ -1,0 +1,54 @@
+[
+  {
+    "id": "agent-engineering",
+    "name": "Engineering Agent",
+    "icon": "⚙️",
+    "domain": "Platform & Release Engineering",
+    "status": "active",
+    "conflicts_detected": 2,
+    "last_detection": "2026-08-14T09:40:00+05:30",
+    "memory_entries": 18,
+    "tasks_completed": 47,
+    "description": "Monitors architecture decisions, authentication changes, infrastructure policy drift, and deployment practices.",
+    "detected_conflict_ids": ["conflict-auth-method", "conflict-release-cadence"]
+  },
+  {
+    "id": "agent-finance",
+    "name": "Finance Agent",
+    "icon": "💰",
+    "domain": "Finance & Compliance",
+    "status": "monitoring",
+    "conflicts_detected": 0,
+    "last_detection": null,
+    "memory_entries": 8,
+    "tasks_completed": 12,
+    "description": "Monitors financial policies, billing procedures, budget approvals, and compliance requirements.",
+    "detected_conflict_ids": []
+  },
+  {
+    "id": "agent-sales",
+    "name": "Sales Agent",
+    "icon": "📈",
+    "domain": "Revenue Operations & Customer Success",
+    "status": "active",
+    "conflicts_detected": 1,
+    "last_detection": "2026-08-12T14:10:00+05:30",
+    "memory_entries": 11,
+    "tasks_completed": 23,
+    "description": "Monitors customer onboarding SOPs, ownership handoff policies, and revenue process changes.",
+    "detected_conflict_ids": ["conflict-onboarding-owner"]
+  },
+  {
+    "id": "agent-research",
+    "name": "Research Agent",
+    "icon": "🔬",
+    "domain": "Knowledge & Documentation",
+    "status": "monitoring",
+    "conflicts_detected": 0,
+    "last_detection": null,
+    "memory_entries": 22,
+    "tasks_completed": 31,
+    "description": "Continuously indexes new documents, updates embeddings, and maintains knowledge graph freshness.",
+    "detected_conflict_ids": []
+  }
+]

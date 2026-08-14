@@ -11,7 +11,13 @@
     "authority_score": 0.86,
     "freshness_score": 0.55,
     "tags": ["payments", "authentication", "jwt", "architecture"],
-    "status": "stale"
+    "status": "stale",
+    "chunk_count": 6,
+    "graph_node_id": "n:doc-payment-architecture",
+    "embedding_model": "text-embedding-3-small",
+    "vector_similarity_top": 0.94,
+    "storage_backend": "s3",
+    "db_table": "documents"
   },
   {
     "id": "doc-deployment-checklist",
@@ -25,7 +31,13 @@
     "authority_score": 0.82,
     "freshness_score": 0.48,
     "tags": ["deployment", "release", "qa"],
-    "status": "stale"
+    "status": "stale",
+    "chunk_count": 4,
+    "graph_node_id": "n:doc-deployment-checklist",
+    "embedding_model": "text-embedding-3-small",
+    "vector_similarity_top": 0.91,
+    "storage_backend": "s3",
+    "db_table": "documents"
   },
   {
     "id": "doc-customer-onboarding",
@@ -36,10 +48,16 @@
     "author": "Divya N",
     "owner": "Customer Success",
     "timestamp": "2026-07-28T11:45:00+05:30",
-    "authority_score": 0.8,
+    "authority_score": 0.80,
     "freshness_score": 0.62,
     "tags": ["customer", "onboarding", "ownership"],
-    "status": "review_required"
+    "status": "review_required",
+    "chunk_count": 5,
+    "graph_node_id": "n:doc-customer-onboarding",
+    "embedding_model": "text-embedding-3-small",
+    "vector_similarity_top": 0.88,
+    "storage_backend": "s3",
+    "db_table": "documents"
   },
   {
     "id": "doc-incident-response",
@@ -50,9 +68,15 @@
     "author": "Karthik V",
     "owner": "SRE",
     "timestamp": "2026-08-10T09:00:00+05:30",
-    "authority_score": 0.9,
+    "authority_score": 0.90,
     "freshness_score": 0.91,
     "tags": ["incident", "sre", "support"],
-    "status": "healthy"
+    "status": "healthy",
+    "chunk_count": 7,
+    "graph_node_id": "n:doc-incident-response",
+    "embedding_model": "text-embedding-3-small",
+    "vector_similarity_top": 0.97,
+    "storage_backend": "s3",
+    "db_table": "documents"
   }
 ]

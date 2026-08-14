@@ -11,7 +11,19 @@
     "recommended_update": "Update the Payment Service Architecture document to state that internal service calls must use OAuth2 client credentials. Keep JWT documented only as a temporary legacy path for read-only endpoints until September.",
     "business_impact": "Engineers may build new integrations against the deprecated JWT path, creating security and rollout risk.",
     "owner": "Platform Engineering",
-    "status": "open"
+    "status": "open",
+    "detected_by": "agent-engineering",
+    "contradiction_score": 0.94,
+    "freshness_delta": 0.43,
+    "authority_delta": 0.06,
+    "graph_hops": 1,
+    "risk_level": "HIGH",
+    "approval_matrix": {
+      "required_approver": "Platform Engineering Lead",
+      "min_authority_score": 0.85,
+      "requires_legal": false,
+      "escalation_path": "Engineering Manager → CTO"
+    }
   },
   {
     "id": "conflict-release-cadence",
@@ -25,7 +37,19 @@
     "recommended_update": "Update the Deployment Checklist with Tuesday and Thursday noon release windows while preserving mandatory QA sign-off.",
     "business_impact": "Teams may wait for the wrong release window or schedule customer work around an outdated Friday deployment process.",
     "owner": "Release Engineering",
-    "status": "open"
+    "status": "open",
+    "detected_by": "agent-engineering",
+    "contradiction_score": 0.87,
+    "freshness_delta": 0.47,
+    "authority_delta": 0.07,
+    "graph_hops": 2,
+    "risk_level": "MEDIUM",
+    "approval_matrix": {
+      "required_approver": "Release Engineering Lead",
+      "min_authority_score": 0.80,
+      "requires_legal": false,
+      "escalation_path": "Engineering Manager"
+    }
   },
   {
     "id": "conflict-onboarding-owner",
@@ -39,6 +63,18 @@
     "recommended_update": "Update the onboarding SOP to assign high-value enterprise onboarding to Implementation Squad from kickoff to go-live, with Customer Success owning relationship health.",
     "business_impact": "High-value customers may experience delays because ownership is unclear between Customer Success and Implementation Squad.",
     "owner": "Revenue Operations",
-    "status": "open"
+    "status": "open",
+    "detected_by": "agent-sales",
+    "contradiction_score": 0.78,
+    "freshness_delta": 0.28,
+    "authority_delta": 0.04,
+    "graph_hops": 2,
+    "risk_level": "LOW",
+    "approval_matrix": {
+      "required_approver": "Revenue Operations Lead",
+      "min_authority_score": 0.75,
+      "requires_legal": false,
+      "escalation_path": "VP Revenue → CEO"
+    }
   }
 ]

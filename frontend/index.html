@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Company Brain OS — Self-Healing Enterprise Knowledge</title>
-    <meta name="description" content="Company Brain OS detects outdated company knowledge, explains conflicts with evidence, and triggers enterprise workflows after human approval." />
+    <meta name="description" content="Company Brain OS — Layers 0-3: Intelligence Core, Processing Pipeline, Data Foundation, and Execution Layer for self-healing enterprise knowledge." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
@@ -13,7 +13,7 @@
   <body>
     <div class="app">
 
-      <!-- ── Sidebar ────────────────────────────────────── -->
+      <!-- ── Sidebar ────────────────────────────────────────── -->
       <aside class="sidebar" role="navigation" aria-label="Main navigation">
         <div class="brand">
           <div class="brand-mark" aria-hidden="true">CB</div>
@@ -23,109 +23,181 @@
           </div>
         </div>
 
-        <p class="nav-label">Navigation</p>
+        <p class="nav-label">Your Layers (0 – 3)</p>
         <nav class="nav">
           <a href="#command" id="nav-command" class="active" aria-current="page">
-            <span class="nav-icon" aria-hidden="true">
+            <span class="nav-icon">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" fill="currentColor"/><rect x="9" y="1" width="6" height="6" rx="1.5" fill="currentColor" opacity="0.5"/><rect x="1" y="9" width="6" height="6" rx="1.5" fill="currentColor" opacity="0.5"/><rect x="9" y="9" width="6" height="6" rx="1.5" fill="currentColor" opacity="0.5"/></svg>
             </span>
             Command Center
+            <span class="layer-chip l3">Overview</span>
+          </a>
+          <a href="#intelligence" id="nav-intelligence">
+            <span class="nav-icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.2 3.2l1.4 1.4M11.4 11.4l1.4 1.4M3.2 12.8l1.4-1.4M11.4 4.6l1.4-1.4" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/></svg>
+            </span>
+            Intelligence Core
+            <span class="layer-chip l2">L2</span>
+          </a>
+          <a href="#pipeline" id="nav-pipeline">
+            <span class="nav-icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="3" width="4" height="10" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="6" y="5" width="4" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="11" y="4" width="4" height="8" rx="1" stroke="currentColor" stroke-width="1.5"/></svg>
+            </span>
+            Pipeline
+            <span class="layer-chip l3">L3</span>
           </a>
           <a href="#conflicts" id="nav-conflicts">
-            <span class="nav-icon" aria-hidden="true">
+            <span class="nav-icon">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2L14 13H2L8 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M8 6V9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="11.5" r="0.75" fill="currentColor"/></svg>
             </span>
             Conflicts
             <span id="conflictBadge" class="badge open" style="margin-left:auto;font-size:10px;padding:2px 7px;"></span>
           </a>
-          <a href="#workflow" id="nav-workflow">
-            <span class="nav-icon" aria-hidden="true">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="3" cy="8" r="2" stroke="currentColor" stroke-width="1.5"/><circle cx="13" cy="4" r="2" stroke="currentColor" stroke-width="1.5"/><circle cx="13" cy="12" r="2" stroke="currentColor" stroke-width="1.5"/><path d="M5 7.5L11 4.5M5 8.5L11 11.5" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/></svg>
+          <a href="#execution" id="nav-execution">
+            <span class="nav-icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </span>
-            Workflows
+            Execution
+            <span class="layer-chip l0">L0</span>
           </a>
           <a href="#audit" id="nav-audit">
-            <span class="nav-icon" aria-hidden="true">
+            <span class="nav-icon">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="1.5" width="12" height="13" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M5 5.5H11M5 8.5H11M5 11.5H8" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/></svg>
             </span>
             Audit Logs
           </a>
         </nav>
 
+        <p class="nav-label" style="margin-top:8px;">Teammate's Layers</p>
+        <div class="teammate-layers">
+          <div class="teammate-layer">
+            <span class="layer-chip l6">L6</span>
+            <span>Web Dashboard UI</span>
+          </div>
+          <div class="teammate-layer">
+            <span class="layer-chip l5">L5</span>
+            <span>API Gateway (FastAPI)</span>
+          </div>
+          <div class="teammate-layer">
+            <span class="layer-chip l4">L4</span>
+            <span>Ingestion + Connectors</span>
+          </div>
+        </div>
+
         <div class="sidebar-note">
           <span><span class="dot" aria-hidden="true"></span>Demo Mode</span>
-          Synthetic Slack, Notion, GitHub, Jira &amp; meeting transcripts. No real integrations.
+          Simulating Layers 0–3. Synthetic data from Slack, GitHub, Notion, Jira connectors.
         </div>
       </aside>
 
-      <!-- ── Main Content ────────────────────────────────── -->
+      <!-- ── Main Content ──────────────────────────────────── -->
       <main class="main" id="main-content">
 
         <!-- Topbar -->
         <header class="topbar">
           <div class="topbar-left">
             <div class="topbar-logo">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="6" stroke="#22c55e" stroke-width="1.5"/><path d="M4 7l2 2 4-4" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="#22c55e" stroke-width="1.5"/><path d="M4 7l2 2 4-4" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
               National Hackathon MVP
             </div>
-            <div class="topbar-divider" aria-hidden="true"></div>
+            <div class="topbar-divider"></div>
             <div>
-              <p class="eyebrow">Knowledge Intelligence Platform</p>
+              <p class="eyebrow">Layers 0–3: Intelligence Core · Pipeline · Data · Execution</p>
               <h1>Company Brain OS</h1>
             </div>
           </div>
           <div class="top-actions">
-            <button id="resetButton" class="ghost-button" type="button" title="Reset all demo state to initial values">
-              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true"><path d="M2 6.5A4.5 4.5 0 1 1 6.5 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M2 3.5V6.5H5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <button id="resetButton" class="ghost-button" type="button" title="Reset all demo state">
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5A4.5 4.5 0 1 1 6.5 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M2 3.5V6.5H5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
               Reset Demo
             </button>
             <span id="apiStatus" class="status-pill" role="status" aria-live="polite">Connecting</span>
           </div>
         </header>
 
-        <!-- ── Command Center ─────────────────────────────── -->
+        <!-- ── Command Center ────────────────────────────── -->
         <section id="command" class="section" aria-labelledby="command-heading">
           <div class="section-heading">
             <div>
-              <p class="eyebrow">Real-Time Intelligence</p>
+              <p class="eyebrow">System Overview</p>
               <h2 id="command-heading">Knowledge Health Dashboard</h2>
             </div>
             <p id="lastScan" class="muted" aria-live="polite">Scanning…</p>
           </div>
           <div class="metrics" role="list">
             <div class="metric critical" role="listitem">
-              <div class="metric-icon" aria-hidden="true">🧠</div>
-              <label for="knowledgeHealth">Knowledge Health</label>
+              <div class="metric-icon">🧠</div>
+              <label>Knowledge Health</label>
               <strong id="knowledgeHealth">--%</strong>
             </div>
             <div class="metric danger" role="listitem">
-              <div class="metric-icon" aria-hidden="true">⚠️</div>
-              <label for="openConflicts">Open Conflicts</label>
+              <div class="metric-icon">⚠️</div>
+              <label>Open Conflicts</label>
               <strong id="openConflicts">--</strong>
             </div>
             <div class="metric info" role="listitem">
-              <div class="metric-icon" aria-hidden="true">📄</div>
-              <label for="staleDocuments">Stale Documents</label>
-              <strong id="staleDocuments">--</strong>
+              <div class="metric-icon">🤖</div>
+              <label>Active Agents</label>
+              <strong id="activeAgents">--</strong>
             </div>
             <div class="metric success" role="listitem">
-              <div class="metric-icon" aria-hidden="true">⚡</div>
-              <label for="workflowCount">Workflow Actions</label>
+              <div class="metric-icon">⚡</div>
+              <label>Execution Actions</label>
               <strong id="workflowCount">--</strong>
             </div>
           </div>
         </section>
 
-        <!-- ── Conflicts ──────────────────────────────────── -->
+        <!-- ── Layer 2: Intelligence Core ───────────────── -->
+        <section id="intelligence" class="section" aria-labelledby="intel-heading">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Layer 2 — Intelligence Core</p>
+              <h2 id="intel-heading">RAG Engine · Knowledge Graph · Multi-Agent System</h2>
+            </div>
+            <span class="layer-chip l2 lg">Layer 2</span>
+          </div>
+
+          <!-- Sub-system stats -->
+          <div id="intelStats" class="intel-stats-row"></div>
+
+          <!-- Agent cards -->
+          <div style="margin-top:18px;">
+            <p class="subsection-label">Multi-Agent System</p>
+            <div id="agentGrid" class="agent-grid"></div>
+          </div>
+        </section>
+
+        <!-- ── Layer 3: Processing Pipeline ─────────────── -->
+        <section id="pipeline" class="section" aria-labelledby="pipeline-heading">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Layer 3 — Processing &amp; Orchestration</p>
+              <h2 id="pipeline-heading">Event Bus · Workers · Router · LangGraph Orchestrator</h2>
+            </div>
+            <span class="layer-chip l3 lg">Layer 3</span>
+          </div>
+
+          <!-- Pipeline component cards -->
+          <div id="pipelineComponents" class="pipeline-grid"></div>
+
+          <!-- Event stage table -->
+          <div style="margin-top:18px;">
+            <p class="subsection-label">Event Flow — Latest Processed Events</p>
+            <div id="eventStages" class="event-stage-list"></div>
+          </div>
+        </section>
+
+        <!-- ── Conflicts ─────────────────────────────────── -->
         <section id="conflicts" class="section two-column" aria-labelledby="conflicts-heading">
           <div>
             <div class="section-heading">
               <div>
-                <p class="eyebrow">Self-Healing Knowledge</p>
+                <p class="eyebrow">Layer 2 — Conflict Detection Engine</p>
                 <h2 id="conflicts-heading">Detected Conflicts</h2>
               </div>
             </div>
-            <div id="conflictList" class="conflict-list" role="list" aria-label="Conflict list"></div>
+            <div id="conflictList" class="conflict-list" role="list"></div>
           </div>
 
           <article id="conflictDetail" class="detail-panel" aria-label="Conflict detail">
@@ -133,13 +205,14 @@
           </article>
         </section>
 
-        <!-- ── Workflows ──────────────────────────────────── -->
-        <section id="workflow" class="section" aria-labelledby="workflow-heading">
+        <!-- ── Layer 0: Execution ─────────────────────────── -->
+        <section id="execution" class="section" aria-labelledby="execution-heading">
           <div class="section-heading">
             <div>
-              <p class="eyebrow">Agentic Execution</p>
-              <h2 id="workflow-heading">Workflow Timeline</h2>
+              <p class="eyebrow">Layer 0 — Execution Layer</p>
+              <h2 id="execution-heading">Workflow Engine · Action Executor · External Systems</h2>
             </div>
+            <span class="layer-chip l0 lg">Layer 0</span>
           </div>
           <div id="workflowTimeline" class="timeline" role="list" aria-live="polite"></div>
         </section>
@@ -148,7 +221,7 @@
         <section id="audit" class="section" aria-labelledby="audit-heading">
           <div class="section-heading">
             <div>
-              <p class="eyebrow">Enterprise Trust &amp; Compliance</p>
+              <p class="eyebrow">Cross-Cutting Concern — Audit &amp; Compliance</p>
               <h2 id="audit-heading">Audit Logs</h2>
             </div>
           </div>
