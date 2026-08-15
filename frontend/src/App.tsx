@@ -152,7 +152,7 @@ export const AppContent: React.FC = () => {
           />
         );
       case 'pipeline':
-        return <PipelineView pipeline={pipeline} />;
+        return <PipelineView pipeline={pipeline} onRefreshAll={refreshAll} />;
       case 'execution':
         return (
           <ExecutionView

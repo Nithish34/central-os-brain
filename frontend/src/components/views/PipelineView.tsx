@@ -1,21 +1,125 @@
-import React, { useState } from 'react';
-import { Layers, Activity, Radio, Cpu, GitBranch, Search, Filter, MessageSquare, Mail, Github, Users, CheckCircle2 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  Layers,
+  Activity,
+  Radio,
+  Cpu,
+  GitBranch,
+  Search,
+  Filter,
+  MessageSquare,
+  Mail,
+  Github,
+  Users,
+  CheckCircle2,
+  Zap,
+  Play,
+  Pause,
+  RefreshCw,
+  Plus,
+  Send,
+  X,
+  Sparkles,
+} from 'lucide-react';
 import { PipelineStatus } from '../../types';
+import { apiService } from '../../services/api';
+import { useToast } from '../ui/ToastContainer';
 
 interface PipelineViewProps {
   pipeline: PipelineStatus | null;
+  onRefreshAll?: () => void;
 }
 
-export const PipelineView: React.FC<PipelineViewProps> = ({ pipeline }) => {
+export const PipelineView: React.FC<PipelineViewProps> = ({ pipeline, onRefreshAll }) => {
   const [selectedSource, setSelectedSource] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
+  const [isSimulating, setIsSimulating] = useState<boolean>(false);
+  const [isAutoStreaming, setIsAutoStreaming] = useState<boolean>(false);
+  const [showCustomModal, setShowCustomModal] = useState<boolean>(false);
+
+  // Custom event form state
+  const [customSource, setCustomSource] = useState<string>('slack');
+  const [customTitle, setCustomTitle] = useState<string>('');
+  const [customAuthor, setCustomAuthor] = useState<string>('');
+  const [customContent, setCustomContent] = useState<string>('');
+
+  const autoStreamTimerRef = useRef<any>(null);
+  const { showToast } = useToast();
 
   const eb = pipeline?.event_bus;
   const bw = pipeline?.background_workers;
   const er = pipeline?.event_router;
   const po = pipeline?.pipeline_orchestrator;
   const stages = pipeline?.event_stages || [];
+
+  // Auto-streaming effect
+  useEffect(() => {
+    if (isAutoStreaming) {
+      autoStreamTimerRef.current = setInterval(async () => {
+        const sources = ['slack', 'github', 'gmail', 'teams', 'jira'];
+        const randomSource = sources[Math.floor(Math.random() * sources.length)];
+        try {
+          await apiService.simulateIncomingEvent({ source: randomSource });
+          if (onRefreshAll) onRefreshAll();
+        } catch {
+          // ignore
+        }
+      }, 5000);
+    } else {
+      if (autoStreamTimerRef.current) {
+        clearInterval(autoStreamTimerRef.current);
+        autoStreamTimerRef.current = null;
+      }
+    }
+
+    return () => {
+      if (autoStreamTimerRef.current) {
+        clearInterval(autoStreamTimerRef.current);
+      }
+    };
+  }, [isAutoStreaming, onRefreshAll]);
+
+  const handleSimulateEvent = async (source: string) => {
+    setIsSimulating(true);
+    try {
+      const res = await apiService.simulateIncomingEvent({ source });
+      showToast(`⚡ Real-time event ingested from ${source.toUpperCase()}!`, 'success');
+      if (onRefreshAll) onRefreshAll();
+    } catch (err: any) {
+      showToast(`Simulation failed: ${err.message}`, 'error');
+    } finally {
+      setIsSimulating(false);
+    }
+  };
+
+  const handleSendCustomEvent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!customContent.trim()) {
+      showToast('Please enter message content.', 'warning');
+      return;
+    }
+
+    setIsSimulating(true);
+    try {
+      await apiService.simulateIncomingEvent({
+        source: customSource,
+        title: customTitle.trim() || `${customSource.toUpperCase()} message: ${customContent.slice(0, 30)}…`,
+        content: customContent.trim(),
+        author: customAuthor.trim() || 'Engineering Ops',
+      });
+      showToast(`🚀 Custom ${customSource.toUpperCase()} event successfully ingested and analyzed!`, 'success');
+      setShowCustomModal(false);
+      setCustomTitle('');
+      setCustomAuthor('');
+      setCustomContent('');
+      if (onRefreshAll) onRefreshAll();
+    } catch (err: any) {
+      showToast(`Failed to ingest custom event: ${err.message}`, 'error');
+    } finally {
+      setIsSimulating(false);
+    }
+  };
 
   const getSourceIcon = (src: string) => {
     switch (src?.toLowerCase()) {
@@ -60,16 +164,89 @@ export const PipelineView: React.FC<PipelineViewProps> = ({ pipeline }) => {
 
   return (
     <div className="view-container anim-fade-in">
-      {/* Header */}
+      {/* Header with Real-Time Simulator Action Buttons */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
         <div>
-          <span className="layer-chip l3">LAYER 3 ASYNCHRONOUS INGESTION</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span className="layer-chip l3">LAYER 3 ASYNCHRONOUS INGESTION</span>
+            <span className="badge ok" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '10.5px' }}>
+              <span className="pulse-dot" style={{ width: '6px', height: '6px' }}></span>
+              Real-Time Ingestion Active
+            </span>
+          </div>
           <h2 style={{ fontSize: '22px', fontWeight: 800, marginTop: '4px', letterSpacing: '-0.02em' }}>
             Event Bus, Workers &amp; Live Ingested Streams
           </h2>
           <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px' }}>
             Real-time feed of messages, emails, commits, and tickets ingested across Slack, GitHub, Gmail, Teams, and Jira.
           </p>
+        </div>
+
+        {/* Action Controls */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          {/* Auto-Stream Toggle */}
+          <button
+            className={`btn ${isAutoStreaming ? 'btn-danger' : 'btn-ghost'}`}
+            onClick={() => {
+              setIsAutoStreaming(!isAutoStreaming);
+              showToast(
+                !isAutoStreaming
+                  ? '🟢 Live Auto-Streaming Started (events arrive every 5s)'
+                  : '⏸️ Live Auto-Streaming Paused',
+                !isAutoStreaming ? 'info' : 'warning'
+              );
+            }}
+            title="Automatically ingest realistic events every 5 seconds"
+          >
+            {isAutoStreaming ? <Pause size={14} /> : <Play size={14} />}
+            <span>{isAutoStreaming ? 'Pause Auto-Stream' : 'Auto-Stream Feed'}</span>
+          </button>
+
+          {/* Quick Simulate Dropdown Buttons */}
+          <button
+            className="btn btn-primary"
+            onClick={() => handleSimulateEvent('slack')}
+            disabled={isSimulating}
+            title="Simulate an instant Slack message"
+          >
+            <Zap size={14} />
+            <span>+ Slack</span>
+          </button>
+
+          <button
+            className="btn btn-primary"
+            onClick={() => handleSimulateEvent('github')}
+            disabled={isSimulating}
+            title="Simulate an instant GitHub PR event"
+          >
+            <Zap size={14} />
+            <span>+ GitHub</span>
+          </button>
+
+          <button
+            className="btn btn-primary"
+            onClick={() => handleSimulateEvent('gmail')}
+            disabled={isSimulating}
+            title="Simulate an instant Gmail notification"
+          >
+            <Zap size={14} />
+            <span>+ Mail</span>
+          </button>
+
+          <button
+            className="btn btn-ghost"
+            onClick={() => setShowCustomModal(true)}
+            title="Compose and send a custom ingested message"
+          >
+            <Plus size={14} />
+            <span>Compose Event</span>
+          </button>
+
+          {onRefreshAll && (
+            <button className="btn btn-ghost" onClick={onRefreshAll} title="Refresh Live Stream">
+              <RefreshCw size={14} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -255,6 +432,88 @@ export const PipelineView: React.FC<PipelineViewProps> = ({ pipeline }) => {
           )}
         </div>
       </div>
+
+      {/* Compose Custom Event Modal */}
+      {showCustomModal && (
+        <div className="modal-overlay" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'grid', placeItems: 'center', zIndex: 9999 }}>
+          <div className="modal-card anim-scale-in" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-strong)', borderRadius: '12px', width: '90%', maxWidth: '520px', padding: '24px', boxShadow: '0 20px 40px rgba(0,0,0,0.8)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <h3 style={{ fontSize: '17px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Sparkles size={18} color="#60a5fa" /> Ingest Real-Time Operational Event
+              </h3>
+              <button className="btn btn-ghost" onClick={() => setShowCustomModal(false)} style={{ padding: '4px' }}>
+                <X size={16} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSendCustomEvent} style={{ display: 'grid', gap: '12px' }}>
+              <div>
+                <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Source Platform</label>
+                <select
+                  className="form-input"
+                  value={customSource}
+                  onChange={(e) => setCustomSource(e.target.value)}
+                  style={{ width: '100%' }}
+                >
+                  <option value="slack">💬 Slack Channel</option>
+                  <option value="github">🐙 GitHub Pull Request / Issue</option>
+                  <option value="gmail">✉️ Gmail / Email Notification</option>
+                  <option value="teams">👥 Microsoft Teams Chat</option>
+                  <option value="jira">🎯 Jira Ticket</option>
+                  <option value="notion">📖 Notion Knowledge Base</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Sender / Author</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g., Priya Raman (Platform Lead) or billing-ops@company.com"
+                  value={customAuthor}
+                  onChange={(e) => setCustomAuthor(e.target.value)}
+                  style={{ width: '100%' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Subject / Event Title</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g., Payment Auth RFC Approved: Migrate to OAuth2"
+                  value={customTitle}
+                  onChange={(e) => setCustomTitle(e.target.value)}
+                  style={{ width: '100%' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Message Body / Decision Content *</label>
+                <textarea
+                  className="form-input"
+                  rows={4}
+                  placeholder="e.g., Decision confirmed today: All internal payment calls are migrating from JWT to OAuth2 client credentials. Support for JWT ends in September."
+                  value={customContent}
+                  onChange={(e) => setCustomContent(e.target.value)}
+                  style={{ width: '100%', resize: 'vertical' }}
+                  required
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '8px' }}>
+                <button type="button" className="btn btn-ghost" onClick={() => setShowCustomModal(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary" disabled={isSimulating || !customContent.trim()}>
+                  <Send size={13} />
+                  <span>{isSimulating ? 'Ingesting…' : 'Ingest & Trigger Pipeline'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

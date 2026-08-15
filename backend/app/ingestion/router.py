@@ -205,3 +205,105 @@ async def ingest_gmail_pubsub(
         "results": [{"eventId": canonical.eventId, "sourceEventId": canonical.sourceEventId, "eventType": canonical.eventType, "status": "normalized"}],
         "pipelineTriggered": True
     })
+
+
+@router.post("/simulate", summary="Simulate an incoming real-time operational message event from any connected application")
+async def simulate_incoming_event(
+    request: Request,
+    db: Session = Depends(get_db),
+    x_company_organization_id: str = Header(default="org-company-brain-demo"),
+):
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+
+    import random
+    from app.ingestion.schemas import CanonicalCompanyEvent, ActorSchema, ContentSchema, ContextSchema
+
+    source = (body.get("source") or "slack").lower()
+    
+    preset_events = [
+        {
+            "source": "slack",
+            "title": "Slack #engineering-core: OAuth2 Token Rotation Standard",
+            "text": "Decision confirmed in Slack: All backend microservices must enforce OAuth2 client credentials with 1-hour token rotation. Basic auth headers are blocked at the gateway.",
+            "author": "Priya Raman (Tech Lead)",
+            "eventType": "architecture_decision"
+        },
+        {
+            "source": "github",
+            "title": "GitHub PR #498: Implement OAuth2 validation filter in payments service",
+            "text": "Merged PR #498 by @sanjay-p: Replaces legacy JWT token validation with OAuth2 introspection endpoint in production payment pipeline.",
+            "author": "Sanjay P (Senior Engineer)",
+            "eventType": "pull_request.merged"
+        },
+        {
+            "source": "gmail",
+            "title": "Email: Enterprise Customer Billing Grace Period SLA Confirmation",
+            "text": "Official email notification from billing-ops@company.local: Enterprise invoice grace period officially extended from 14 to 30 days. Dunning policy updated in financial systems.",
+            "author": "billing-ops@companybrain.local",
+            "eventType": "email.received"
+        },
+        {
+            "source": "teams",
+            "title": "Teams #sec-ops: Mandatory OIDC OAuth 2.0 PKCE Rollout",
+            "text": "CISO directive in Microsoft Teams: Enforce OIDC OAuth 2.0 with PKCE and hardware MFA tokens for all internal portal authentication effective this sprint.",
+            "author": "Elena Rostova (CISO)",
+            "eventType": "chat_message"
+        },
+        {
+            "source": "jira",
+            "title": "Jira PLAT-902: Review and update payment architecture runbook",
+            "text": "Task assigned to Platform Engineering: Update payment architecture technical specifications and deprecate legacy JWT auth documentation.",
+            "author": "Karthik V (SRE Lead)",
+            "eventType": "process_ticket"
+        }
+    ]
+
+    selected = next((p for p in preset_events if p["source"] == source), random.choice(preset_events))
+    
+    title = body.get("title") or selected["title"]
+    text = body.get("content") or body.get("text") or selected["text"]
+    author = body.get("author") or selected["author"]
+    event_type = body.get("eventType") or selected["eventType"]
+    source_val = body.get("source") or selected["source"]
+
+    correlation_id = f"corr-sim-{uuid.uuid4().hex[:8]}"
+    event_id = f"evt-{source_val}-{uuid.uuid4().hex[:8]}"
+
+    canonical = CanonicalCompanyEvent(
+        eventId=event_id,
+        organizationId=x_company_organization_id,
+        source=source_val,
+        sourceEventId=str(uuid.uuid4().hex[:8]),
+        eventType=event_type,
+        actor=ActorSchema(id=author, displayName=author),
+        occurredAt=datetime.now().astimezone().isoformat(timespec="seconds"),
+        receivedAt=datetime.now().astimezone().isoformat(timespec="seconds"),
+        content=ContentSchema(
+            title=title,
+            text=text,
+            summary=text[:140]
+        ),
+        context=ContextSchema(channelId="general"),
+        correlationId=correlation_id
+    )
+
+    db_event = EventNormalizer.persist_and_route(db, canonical)
+
+    return JSONResponse(content={
+        "ok": True,
+        "event": {
+            "id": db_event.id,
+            "source": db_event.source,
+            "title": db_event.title,
+            "content": db_event.content,
+            "author": db_event.author,
+            "timestamp": db_event.timestamp,
+            "pipeline_stage": db_event.pipeline_stage,
+            "type": db_event.event_type_normalized,
+        },
+        "pipelineTriggered": True,
+        "message": f"Real-time event from {source_val.capitalize()} successfully ingested and piped into Layer 3 Event Bus and Layer 2 Contradiction Engine."
+    })

@@ -127,6 +127,19 @@ export const apiService = {
     });
   },
 
+  async simulateIncomingEvent(payload?: {
+    source?: string;
+    title?: string;
+    content?: string;
+    author?: string;
+    eventType?: string;
+  }): Promise<{ ok: boolean; event: any; message: string; pipelineTriggered: boolean }> {
+    return request<{ ok: boolean; event: any; message: string; pipelineTriggered: boolean }>('/api/v1/ingestion/simulate', {
+      method: 'POST',
+      body: JSON.stringify(payload || {}),
+    });
+  },
+
   // Auth & Profile
   async login(email: string = 'admin@companybrain.local', password: string = 'admin1234'): Promise<{ access_token: string; user: UserProfile }> {
     const data = await request<{ access_token: string; user: UserProfile }>('/api/v1/auth/login', {
