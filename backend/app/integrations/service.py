@@ -101,10 +101,103 @@ class IntegrationService:
         raise ValueError(f"Unknown provider {provider}")
 
     @staticmethod
-    def sync_provider(provider: Provider) -> IntegrationStatus:
+    def sync_provider(provider: Provider, db: Optional[Any] = None) -> IntegrationStatus:
         item = INTEGRATION_REGISTRY.get(provider)
-        if item:
-            item.events_ingested += 1
-            item.last_sync = datetime.now().astimezone().isoformat(timespec="seconds")
-            return item
-        raise ValueError(f"Unknown provider {provider}")
+        if not item:
+            raise ValueError(f"Unknown provider {provider}")
+
+        item.events_ingested += 1
+        now_iso = datetime.now().astimezone().isoformat(timespec="seconds")
+        item.last_sync = now_iso
+
+        if db:
+            import uuid
+            from app.models.event import CompanyEvent
+            from app.models.conflict import Conflict
+
+            event_templates = {
+                Provider.SLACK: {
+                    "source": "Slack",
+                    "type": "message.created",
+                    "title": "Slack #engineering-sync: Real-time decision",
+                    "content": "Decision confirmed in #engineering-sync: All microservices migrated to OAuth2 client credentials. Deprecation of legacy JWT endpoints is on track for Q3.",
+                    "author": "Priya Raman (Tech Lead)",
+                    "owner": "Platform Engineering",
+                    "tags": ["slack", "payments", "oauth2", "architecture"],
+                    "event_type_normalized": "architecture_decision",
+                },
+                Provider.GITHUB: {
+                    "source": "GitHub",
+                    "type": "pull_request.merged",
+                    "title": f"GitHub PR #{200 + item.events_ingested}: Security & Auth middleware updates",
+                    "content": f"Merged PR #{200 + item.events_ingested} on main branch: Enforce OAuth2 client authentication headers and add telemetry logs for legacy token requests.",
+                    "author": "Sanjay P (Senior Engineer)",
+                    "owner": "Platform Engineering",
+                    "tags": ["github", "pr", "payments", "oauth2"],
+                    "event_type_normalized": "code_change",
+                },
+                Provider.GMAIL: {
+                    "source": "Gmail",
+                    "type": "email.received",
+                    "title": "Email: Billing Ops SLA Grace Period Extension",
+                    "content": "Billing Operations announcement: Customer invoice payment SLA grace period is officially extended from 14 to 30 days for enterprise tiers. Automated dunning schedules have been updated.",
+                    "author": "billing-ops@companybrain.local",
+                    "owner": "Finance Operations",
+                    "tags": ["gmail", "billing", "sla", "finance"],
+                    "event_type_normalized": "policy_update",
+                },
+                Provider.TEAMS: {
+                    "source": "Teams",
+                    "type": "chat_message",
+                    "title": "Teams #sec-ops: Zero-Trust PKCE and Hardware MFA standard",
+                    "content": "CISO directive in #sec-ops: Deprecate legacy basic auth headers. Enforce OIDC OAuth 2.0 with PKCE and hardware MFA tokens across staging and prod.",
+                    "author": "Elena Rostova (CISO)",
+                    "owner": "Security Operations",
+                    "tags": ["teams", "security", "auth", "mfa"],
+                    "event_type_normalized": "security_policy",
+                },
+                Provider.JIRA: {
+                    "source": "Jira",
+                    "type": "process_ticket",
+                    "title": f"Jira SRE-{300 + item.events_ingested}: Incident Runbook SLA Review",
+                    "content": "Sev1 postmortem SLA confirmed at 48 hours. Primary on-call escalation rotation verified with Platform and SRE squads.",
+                    "author": "Karthik V (SRE Lead)",
+                    "owner": "SRE",
+                    "tags": ["jira", "incident", "sre", "support"],
+                    "event_type_normalized": "policy_validation",
+                },
+                Provider.NOTION: {
+                    "source": "Notion",
+                    "type": "document_sync",
+                    "title": "Notion KB: Enterprise Onboarding SOP v3.2",
+                    "content": "Implementation Squad owns onboarding for all accounts > Rs. 25L ACV. Customer Success manages relationship health scoring.",
+                    "author": "Divya N (Customer Success)",
+                    "owner": "Revenue Operations",
+                    "tags": ["notion", "onboarding", "ownership", "kb"],
+                    "event_type_normalized": "ownership_change",
+                },
+            }
+
+            tmpl = event_templates.get(provider)
+            if tmpl:
+                evt = CompanyEvent(
+                    id=f"evt-{provider.value}-sync-{uuid.uuid4().hex[:6]}",
+                    source=tmpl["source"],
+                    type=tmpl["type"],
+                    title=tmpl["title"],
+                    content=tmpl["content"],
+                    author=tmpl["author"],
+                    owner=tmpl["owner"],
+                    timestamp=now_iso,
+                    authority_score=0.92,
+                    freshness_score=0.98,
+                    pipeline_stage="processed",
+                    event_type_normalized=tmpl["event_type_normalized"],
+                    ingestion_source=f"{provider.value}-connector",
+                    vector_indexed=True,
+                )
+                evt.tags = tmpl.get("tags", [])
+                db.add(evt)
+                db.commit()
+
+        return item

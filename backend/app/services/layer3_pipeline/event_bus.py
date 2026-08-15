@@ -55,6 +55,9 @@ class EventBusService:
                     "stage": e.pipeline_stage,
                     "type": e.event_type_normalized,
                     "ts": e.timestamp,
+                    "author": e.author or "System",
+                    "content": e.content or "",
+                    "owner": e.owner or "",
                 }
                 for e in events
             ],

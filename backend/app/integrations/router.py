@@ -27,6 +27,13 @@ def connect_integration(provider: Provider, request: ConnectRequest, user: UserR
     return IntegrationService.connect_provider(provider, request.account_id, request.account_name)
 
 
+from app.core.database import get_db
+from sqlalchemy.orm import Session
+
 @router.post("/{provider}/sync", response_model=IntegrationStatus, summary="Trigger manual sync on an integration provider")
-def sync_integration(provider: Provider, user: UserResponse = Depends(require_permission("integrations:write"))):
-    return IntegrationService.sync_provider(provider)
+def sync_integration(
+    provider: Provider,
+    db: Session = Depends(get_db),
+    user: UserResponse = Depends(require_permission("integrations:write"))
+):
+    return IntegrationService.sync_provider(provider, db=db)

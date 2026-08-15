@@ -41,6 +41,9 @@ class EventStageItem(BaseModel):
     stage: str
     type: str
     ts: str
+    author: str = "System"
+    content: str = ""
+    owner: str = ""
 
 
 class PipelineStatusResponse(BaseModel):
