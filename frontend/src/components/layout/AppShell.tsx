@@ -109,7 +109,16 @@ export const AppShell: React.FC<AppShellProps> = ({
               handleLinkClick('chat');
             }}
           >
-            <div className="brand-mark" style={{ background: 'linear-gradient(135deg, #0ea5e9, #2563eb)' }}>AX</div>
+            <div className="brand-mark" style={{ overflow: 'hidden', padding: 0 }}>
+              <img
+                src="/images/axiom_logo.jpg"
+                alt="Axiom OS"
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
+            </div>
             <div className="brand-text">
               <strong>Axiom OS</strong>
               <span>Ground Truth 2.0</span>

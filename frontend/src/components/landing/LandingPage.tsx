@@ -78,6 +78,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunchApp }) => {
   // FAQ Accordion open/close state
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
+  // System Architecture Blueprint Image Modal state
+  const [showArchBlueprint, setShowArchBlueprint] = useState<boolean>(false);
+
+
   // Canvas particle mesh background
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -1011,16 +1015,75 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunchApp }) => {
                 ))}
               </div>
 
-              <div className="arch-detail-footer">
+              <div className="arch-detail-footer" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <button
+                  className="btn btn-primary"
+                  onClick={() => setShowArchBlueprint(!showArchBlueprint)}
+                  title="Toggle Full 7-Layer Architecture Diagram"
+                >
+                  <Layers size={14} />
+                  <span>{showArchBlueprint ? 'Hide Architecture Diagram' : 'View Full Architecture Blueprint Diagram'}</span>
+                </button>
                 <button className="btn btn-ghost" onClick={() => onLaunchApp('intelligence')}>
                   <span>Inspect Live Layer in Intelligence Core</span>
                   <ArrowRight size={13} />
                 </button>
               </div>
+
+              {showArchBlueprint && (
+                <div
+                  className="arch-blueprint-modal-preview"
+                  style={{
+                    marginTop: '20px',
+                    border: '1px solid rgba(59, 130, 246, 0.3)',
+                    borderRadius: '12px',
+                    overflow: 'hidden',
+                    background: '#0a0f1d',
+                    padding: '16px',
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: '12px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span className="pulse-dot"></span>
+                      <strong style={{ fontSize: '13px', color: '#93c5fd' }}>
+                        Axiom OS Enterprise Architecture &amp; Workflow Trace
+                      </strong>
+                    </div>
+                    <a
+                      href="/images/architecture_workflow.png"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn btn-ghost"
+                      style={{ fontSize: '12px', padding: '4px 10px' }}
+                    >
+                      Open Full Resolution ↗
+                    </a>
+                  </div>
+                  <img
+                    src="/images/architecture_workflow.png"
+                    alt="Axiom OS 7-Layer Architecture Workflow Diagram"
+                    style={{
+                      width: '100%',
+                      maxHeight: '600px',
+                      objectFit: 'contain',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(255,255,255,0.08)',
+                    }}
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>
       </section>
+
 
       {/* ── Interactive ROI & Value Calculator ── */}
       <section id="roi" className="landing-section roi-section">

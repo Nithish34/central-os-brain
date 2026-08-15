@@ -57,9 +57,22 @@ app.include_router(root_ingestion_router, prefix="")
 
 
 
-# Frontend static files and SPA route
+# Static directory
+STATIC_DIR = (ROOT_DIR / "frontend" / "dist") if (ROOT_DIR / "frontend" / "dist").exists() else (ROOT_DIR / "frontend")
+
+# 1. Mount assets (JS, CSS chunks)
 if (STATIC_DIR / "assets").exists():
     app.mount("/assets", StaticFiles(directory=str(STATIC_DIR / "assets")), name="assets")
+
+# 2. Mount images directory for logos, illustrations, and interactive media
+if (STATIC_DIR / "images").exists():
+    app.mount("/images", StaticFiles(directory=str(STATIC_DIR / "images")), name="images")
+elif (ROOT_DIR / "frontend" / "public" / "images").exists():
+    app.mount("/images", StaticFiles(directory=str(ROOT_DIR / "frontend" / "public" / "images")), name="images")
+
+# 3. Mount static root
+if STATIC_DIR.exists():
+    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static_root")
 
 
 @app.get("/")
@@ -70,22 +83,34 @@ def serve_index():
     return {"message": f"{settings.APP_NAME} API is running. Frontend static build not found."}
 
 
-if STATIC_DIR.exists():
-    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static_root")
-
-
 @app.exception_handler(404)
 async def spa_fallback_404_handler(request, exc):
     path = request.url.path
-    # If it's an API, docs, or explicit static asset request, return JSON 404
-    if path.startswith(("/api", "/docs", "/redoc", "/openapi.json")) or "." in path.split("/")[-1]:
+    # Return JSON 404 for API endpoints, docs, and OpenAPI specifications
+    if path.startswith(("/api", "/docs", "/redoc", "/openapi.json")):
         from fastapi.responses import JSONResponse
-        return JSONResponse(status_code=404, content={"detail": f"Route '{path}' not found."})
+        return JSONResponse(status_code=404, content={"detail": f"API route '{path}' not found."})
     
+    # Check if the requested file exists in STATIC_DIR or frontend/public
+    rel_path = path.lstrip("/")
+    target_file = STATIC_DIR / rel_path
+    if target_file.is_file():
+        return FileResponse(target_file)
+
+    public_file = (ROOT_DIR / "frontend" / "public") / rel_path
+    if public_file.is_file():
+        return FileResponse(public_file)
+    
+    # If it's an explicit asset request (with file extension) that wasn't found, return 404
+    if "." in path.split("/")[-1] and not path.endswith(".html"):
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=404, content={"detail": f"Static asset '{path}' not found."})
+
     # Otherwise fallback to index.html for React Router SPA navigation
     index_path = STATIC_DIR / "index.html"
     if index_path.exists():
         return FileResponse(index_path)
     from fastapi.responses import JSONResponse
     return JSONResponse(status_code=404, content={"detail": f"Route '{path}' not found."})
+
 
