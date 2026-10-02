@@ -13,19 +13,27 @@ import {
   ChatSession,
 } from '../types';
 
-let authToken = localStorage.getItem('cbos_token') || '';
+let authToken = localStorage.getItem('cbos_token') || localStorage.getItem('cb_token') || '';
 
 export function setAuthToken(token: string) {
   authToken = token;
   if (token) {
     localStorage.setItem('cbos_token', token);
+    localStorage.setItem('cb_token', token);
   } else {
     localStorage.removeItem('cbos_token');
+    localStorage.removeItem('cb_token');
   }
 }
 
 export function getAuthToken(): string {
   return authToken;
+}
+
+function getCookie(name: string): string | null {
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie.match(new RegExp('(^|;\\s*)(' + name + ')=([^;]*)'));
+  return match ? decodeURIComponent(match[3]) : null;
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -38,7 +46,13 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     headers['Authorization'] = `Bearer ${authToken}`;
   }
 
+  const csrfToken = getCookie('cb_csrf_token') || localStorage.getItem('cb_csrf_token');
+  if (csrfToken) {
+    headers['X-CSRF-Token'] = csrfToken;
+  }
+
   const res = await fetch(path, {
+    credentials: 'include',
     ...options,
     headers,
   });
@@ -121,6 +135,23 @@ export const apiService = {
     return request<IntegrationConnector[]>('/api/v1/integrations');
   },
 
+  async getAuthorizeUrl(provider: string): Promise<{ authorization_url: string; state: string }> {
+    return request<{ authorization_url: string; state: string }>(`/api/v1/integrations/${provider}/authorize`);
+  },
+
+  async connectIntegration(provider: string, data: { access_token?: string; account_id?: string; account_name?: string; credentials?: Record<string, any> }): Promise<{ status: string; provider: string; message: string }> {
+    return request<{ status: string; provider: string; message: string }>(`/api/v1/integrations/${provider}/connect`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async disconnectIntegration(provider: string): Promise<{ message?: string }> {
+    return request<{ message?: string }>(`/api/v1/integrations/${provider}/disconnect`, {
+      method: 'POST',
+    });
+  },
+
   async syncIntegration(provider: string): Promise<{ status: string; message: string }> {
     return request<{ status: string; message: string }>(`/api/v1/integrations/${provider}/sync`, {
       method: 'POST',
@@ -152,8 +183,105 @@ export const apiService = {
     return data;
   },
 
+  async register(email: string, password: string, displayName: string, orgName?: string): Promise<{ access_token: string; user: UserProfile }> {
+    const data = await request<{ access_token: string; user: UserProfile }>('/api/v1/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ email, password, full_name: displayName, organization_name: orgName || `${displayName}'s Org` }),
+    });
+    if (data.access_token) {
+      setAuthToken(data.access_token);
+    }
+    return data;
+  },
+
+  async verifyGoogleToken(credential: string, orgId?: string): Promise<{ access_token: string; user: UserProfile; csrf_token: string }> {
+    const data = await request<{ access_token: string; user: UserProfile; csrf_token: string }>('/api/v1/auth/oauth/google/verify', {
+      method: 'POST',
+      body: JSON.stringify({ credential, organization_id: orgId }),
+    });
+    if (data.access_token) {
+      setAuthToken(data.access_token);
+    }
+    return data;
+  },
+
+  async getGoogleAuthorizeUrl(redirectUri?: string): Promise<{ authorization_url: string; state: string }> {
+    const qs = redirectUri ? `?redirect_uri=${encodeURIComponent(redirectUri)}` : '';
+    return request<{ authorization_url: string; state: string }>(`/api/v1/auth/oauth/google/authorize${qs}`);
+  },
+
+  async logout(): Promise<void> {
+    try {
+      await request('/api/v1/auth/logout', { method: 'POST' });
+    } finally {
+      setAuthToken('');
+    }
+  },
+
   async getProfile(): Promise<UserProfile> {
     return request<UserProfile>('/api/v1/auth/me');
+  },
+
+  // Operations & Event Platform Observability (Phase 4)
+  async getCanonicalEvents(params?: {
+    provider?: string;
+    event_type?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<{ total: number; limit: number; offset: number; events: any[] }> {
+    const searchParams = new URLSearchParams();
+    if (params?.provider) searchParams.set('provider', params.provider);
+    if (params?.event_type) searchParams.set('event_type', params.event_type);
+    if (params?.limit) searchParams.set('limit', String(params.limit));
+    if (params?.offset) searchParams.set('offset', String(params.offset));
+    const qs = searchParams.toString();
+    return request<{ total: number; limit: number; offset: number; events: any[] }>(
+      `/api/v1/operations/events${qs ? `?${qs}` : ''}`
+    );
+  },
+
+  async getEventLifecycle(eventId: string): Promise<any> {
+    return request<any>(`/api/v1/operations/events/${eventId}`);
+  },
+
+  async getWorkerMetrics(): Promise<{ status: string; stream: string; consumer_groups: Record<string, { status: string; pending_messages: number }> }> {
+    return request<{ status: string; stream: string; consumer_groups: Record<string, { status: string; pending_messages: number }> }>(
+      '/api/v1/operations/workers'
+    );
+  },
+
+  async getDeadLetters(params?: {
+    consumer_group?: string;
+    resolution_status?: string;
+    limit?: number;
+  }): Promise<any[]> {
+    const searchParams = new URLSearchParams();
+    if (params?.consumer_group) searchParams.set('consumer_group', params.consumer_group);
+    if (params?.resolution_status) searchParams.set('resolution_status', params.resolution_status);
+    if (params?.limit) searchParams.set('limit', String(params.limit));
+    const qs = searchParams.toString();
+    return request<any[]>(`/api/v1/operations/dead-letters${qs ? `?${qs}` : ''}`);
+  },
+
+  async retryDeadLetter(dlqId: string): Promise<{ status: string; dlq_id: string; event_id: string; message: string }> {
+    return request<{ status: string; dlq_id: string; event_id: string; message: string }>(
+      `/api/v1/operations/dead-letters/${dlqId}/retry`,
+      { method: 'POST' }
+    );
+  },
+
+  async triggerReplay(payload: {
+    reason: string;
+    provider?: string;
+    event_type?: string;
+    start_date?: string;
+    end_date?: string;
+    limit?: number;
+  }): Promise<any> {
+    return request<any>('/api/v1/operations/events/replay', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
   },
 
   // Demo Reset

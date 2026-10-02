@@ -195,6 +195,7 @@ export interface UserProfile {
   display_name: string;
   role: string;
   permissions: string[];
+  avatar_url?: string;
 }
 
 export interface ChatCitation {
@@ -229,5 +230,123 @@ export interface ToastMessage {
   id: string;
   type: 'success' | 'info' | 'error' | 'warning';
   message: string;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Phase 4: Event-Driven Platform & Operations Types
+// ══════════════════════════════════════════════════════════════════════════════
+
+export interface CanonicalEventSummary {
+  event_id: string;
+  provider: string;
+  event_type: string;
+  occurred_at: string;
+  received_at: string;
+  correlation_id: string;
+  causation_id?: string;
+  idempotency_key: string;
+  actor?: string;
+  source?: string;
+  payload_preview: string;
+}
+
+export interface CanonicalEventListResponse {
+  total: number;
+  limit: number;
+  offset: number;
+  events: CanonicalEventSummary[];
+}
+
+export interface OutboxEntryItem {
+  outbox_id: string;
+  run_id?: string;
+  status: 'pending' | 'publishing' | 'published' | 'failed';
+  attempts: number;
+  claimed_at?: string | null;
+  published_at?: string | null;
+  last_error?: string | null;
+}
+
+export interface ConsumerGroupStateItem {
+  state_id: string;
+  consumer_group: string;
+  run_id: string;
+  run_type?: string;
+  status: 'received' | 'processing' | 'processed' | 'failed' | 'dead_letter';
+  attempt_count: number;
+  worker_id?: string | null;
+  last_error?: string | null;
+  processed_at?: string | null;
+  next_retry_at?: string | null;
+}
+
+export interface DeadLetterItem {
+  dlq_id: string;
+  consumer_group: string;
+  run_id: string;
+  failure_reason: string;
+  error_details?: string | null;
+  attempts: number;
+  failed_at: string;
+  resolved_at?: string | null;
+  resolution_status: 'unresolved' | 'retrying' | 'resolved' | 'ignored';
+  event_id?: string;
+  id?: string;
+}
+
+export interface EventLifecycleDetail {
+  event_id: string;
+  organization_id: string;
+  provider: string;
+  event_type: string;
+  correlation_id: string;
+  causation_id?: string;
+  idempotency_key: string;
+  occurred_at: string;
+  received_at: string;
+  actor?: string;
+  source?: string;
+  payload: Record<string, any>;
+  outbox: OutboxEntryItem[];
+  consumer_groups: ConsumerGroupStateItem[];
+  dead_letters: DeadLetterItem[];
+}
+
+export interface WorkerGroupMetric {
+  status: string;
+  pending_messages: number;
+  lag?: number;
+}
+
+export interface WorkerMetricsResponse {
+  status: string;
+  stream: string;
+  consumer_groups: Record<string, WorkerGroupMetric>;
+}
+
+export interface ReplayRequestPayload {
+  reason: string;
+  provider?: string;
+  event_type?: string;
+  start_date?: string;
+  end_date?: string;
+  limit?: number;
+}
+
+export interface ReplayResponsePayload {
+  run_id: string;
+  organization_id: string;
+  events_replayed: number;
+  reason: string;
+  filters: Record<string, any>;
+  status: string;
+}
+
+export interface OrganizationTenant {
+  id: string;
+  name: string;
+  slug: string;
+  tier?: string;
+  role?: string;
 }
 

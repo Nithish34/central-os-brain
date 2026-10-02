@@ -182,6 +182,6 @@ The repository includes [`fly.toml`](./fly.toml).
 
 - [ ] **JWT Secret**: Ensure `JWT_SECRET` is set to a secure 256-bit random string (`openssl rand -hex 32`).
 - [ ] **Admin Credentials**: Change default `ADMIN_BOOTSTRAP_PASSWORD` in production.
-- [ ] **CORS**: In `backend/app/core/config.py` or `.env`, restrict `CORS_ALLOWED_ORIGINS` to your production domain(s).
+- [ ] **CORS**: In `fast_api_server/app/core/config.py` or `.env`, restrict `CORS_ALLOWED_ORIGINS` to your production domain(s).
 - [ ] **Database Backups**: Schedule automated snapshot backups of the `postgres_data` volume.
 - [ ] **API Keys**: Store `GEMINI_API_KEY`, `SLACK_SIGNING_SECRET`, `GITHUB_TOKEN`, and `JIRA_API_TOKEN` in cloud secret managers or environment variables.

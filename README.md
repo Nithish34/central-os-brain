@@ -15,11 +15,11 @@ The demo shows an official company document becoming outdated, Company Brain det
 ## Project Structure
 
 ```text
-backend/   Python demo API
-frontend/  Static dashboard demo
-data/      Synthetic company data
-docs/      Pitch and architecture notes
-scripts/   Helper scripts
+fast_api_server/  Python FastAPI standalone server & API
+frontend/         Static dashboard demo
+data/             Synthetic company data
+docs/             Pitch and architecture notes
+scripts/          Helper scripts
 ```
 
 ## Quick Start
@@ -27,7 +27,7 @@ scripts/   Helper scripts
 Use the bundled Python runtime if global Python is not installed:
 
 ```powershell
-& "C:\Users\andre\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe" backend\app.py
+& "C:\Users\andre\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe" fast_api_server\run.py
 ```
 
 Then open:

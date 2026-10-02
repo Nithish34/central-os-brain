@@ -2,7 +2,8 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "backend"))
+sys.path.insert(0, str(ROOT / "fast_api_server"))
+sys.path.insert(0, str(ROOT))
 
 from app.core.database import init_db, SessionLocal
 from app.api.v1.endpoints.demo import reset_and_seed_db

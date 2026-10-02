@@ -1,3 +1,4 @@
+import './PipelineView.view.css';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Layers,
@@ -163,345 +164,299 @@ export const PipelineView: React.FC<PipelineViewProps> = ({ pipeline, onRefreshA
   }, {});
 
   return (
-    <div className="view-container anim-fade-in">
+    <div className="view-container anim-fade-in pl-view">
       {/* Header with Real-Time Simulator Action Buttons */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <header className="pl-header">
+        <div className="pl-header-main">
+          <div className="pl-eyebrow-row">
             <span className="layer-chip l3">LAYER 3 ASYNCHRONOUS INGESTION</span>
-            <span className="badge ok" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '10.5px' }}>
-              <span className="pulse-dot" style={{ width: '6px', height: '6px' }}></span>
+            <span className="badge ok pl-live-badge">
+              <span className="pulse-dot"></span>
               Real-Time Ingestion Active
             </span>
           </div>
-          <h2 style={{ fontSize: '22px', fontWeight: 800, marginTop: '4px', letterSpacing: '-0.02em' }}>
-            Event Bus, Workers &amp; Live Ingested Streams
-          </h2>
-          <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px' }}>
-            Real-time feed of messages, emails, commits, and tickets ingested across Slack, GitHub, Gmail, Teams, and Jira.
+          <div className="pl-dateline">
+            {new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })} · LIVE INGESTION BUS
+          </div>
+          <h1 className="pl-title">Live Ingestion Bus</h1>
+          <p className="pl-subcopy">
+            Real-time stream of inbound events across connected sources.
           </p>
         </div>
 
         {/* Action Controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          {/* Auto-Stream Toggle */}
-          <button
-            className={`btn ${isAutoStreaming ? 'btn-danger' : 'btn-ghost'}`}
-            onClick={() => {
-              setIsAutoStreaming(!isAutoStreaming);
-              showToast(
-                !isAutoStreaming
-                  ? '🟢 Live Auto-Streaming Started (events arrive every 5s)'
-                  : '⏸️ Live Auto-Streaming Paused',
-                !isAutoStreaming ? 'info' : 'warning'
-              );
-            }}
-            title="Automatically ingest realistic events every 5 seconds"
-          >
-            {isAutoStreaming ? <Pause size={14} /> : <Play size={14} />}
-            <span>{isAutoStreaming ? 'Pause Auto-Stream' : 'Auto-Stream Feed'}</span>
-          </button>
-
-          {/* Quick Simulate Dropdown Buttons */}
-          <button
-            className="btn btn-primary"
-            onClick={() => handleSimulateEvent('slack')}
-            disabled={isSimulating}
-            title="Simulate an instant Slack message"
-          >
-            <Zap size={14} />
-            <span>+ Slack</span>
-          </button>
-
-          <button
-            className="btn btn-primary"
-            onClick={() => handleSimulateEvent('github')}
-            disabled={isSimulating}
-            title="Simulate an instant GitHub PR event"
-          >
-            <Zap size={14} />
-            <span>+ GitHub</span>
-          </button>
-
-          <button
-            className="btn btn-primary"
-            onClick={() => handleSimulateEvent('gmail')}
-            disabled={isSimulating}
-            title="Simulate an instant Gmail notification"
-          >
-            <Zap size={14} />
-            <span>+ Mail</span>
-          </button>
-
-          <button
-            className="btn btn-ghost"
-            onClick={() => setShowCustomModal(true)}
-            title="Compose and send a custom ingested message"
-          >
-            <Plus size={14} />
-            <span>Compose Event</span>
-          </button>
-
-          {onRefreshAll && (
-            <button className="btn btn-ghost" onClick={onRefreshAll} title="Refresh Live Stream">
-              <RefreshCw size={14} />
+        <div className="pl-header-actions">
+          <div className="pl-sim-cluster">
+            <button
+              className={`btn ${isAutoStreaming ? 'btn-danger' : 'btn-ghost'}`}
+              onClick={() => {
+                setIsAutoStreaming(!isAutoStreaming);
+                showToast(!isAutoStreaming ? 'Live Auto-Streaming Started (events arrive every 5s)' : 'Auto-Streaming Paused', !isAutoStreaming ? 'info' : 'warning');
+              }}
+              title="Automatically ingest realistic events every 5 seconds"
+            >
+              {isAutoStreaming ? <Pause size={14} /> : <Play size={14} />}
+              <span>{isAutoStreaming ? 'Pause Auto-Stream' : 'Auto-Stream Feed'}</span>
             </button>
-          )}
+
+            <button className="btn btn-primary" onClick={() => handleSimulateEvent('slack')} disabled={isSimulating} title="Simulate an instant Slack message">
+              <Zap size={14} />
+              <span>+ Slack</span>
+            </button>
+
+            <button className="btn btn-primary" onClick={() => handleSimulateEvent('github')} disabled={isSimulating} title="Simulate an instant GitHub PR event">
+              <Zap size={14} />
+              <span>+ GitHub</span>
+            </button>
+
+            <button className="btn btn-primary" onClick={() => handleSimulateEvent('gmail')} disabled={isSimulating} title="Simulate an instant Gmail notification">
+              <Zap size={14} />
+              <span>+ Mail</span>
+            </button>
+
+            <button className="btn btn-ghost" onClick={() => setShowCustomModal(true)} title="Compose and send a custom ingested message">
+              <Plus size={14} />
+              <span>Compose</span>
+            </button>
+
+            {onRefreshAll && (
+              <button className="btn btn-ghost" onClick={onRefreshAll} title="Refresh Live Stream">
+                <RefreshCw size={14} />
+              </button>
+            )}
+          </div>
         </div>
-      </div>
+      </header>
 
       {/* Component Cards Grid */}
-      <div className="pipeline-components-grid" style={{ marginTop: '14px' }}>
-        <div className="pipeline-card">
-          <div className="pipeline-card-head">
-            <span style={{ fontSize: '12.5px', fontWeight: 600, color: 'var(--text-muted)' }}>🚌 Event Bus</span>
+      <section className="pl-comp-grid" aria-label="Pipeline components">
+        <div className="pl-comp c1">
+          <div className="pl-comp-head">
+            <span className="pl-comp-name">
+              <Radio size={14} />
+              Event Bus
+            </span>
             <span className="badge ok">{eb?.status || 'Active'}</span>
           </div>
-          <div className="pipeline-card-val">{(eb?.messages_processed || 1420).toLocaleString()}</div>
-          <div style={{ fontSize: '11.5px', color: 'var(--text-dim)' }}>
+          <div className="pl-comp-val">{(eb?.messages_processed || 1420).toLocaleString()}</div>
+          <div className="pl-comp-sub">
             msgs processed · {eb?.throughput_per_min || 120}/min · {eb?.backend || 'Redis Streams'}
           </div>
         </div>
 
-        <div className="pipeline-card">
-          <div className="pipeline-card-head">
-            <span style={{ fontSize: '12.5px', fontWeight: 600, color: 'var(--text-muted)' }}>⚙️ Celery Workers</span>
+        <div className="pl-comp c2">
+          <div className="pl-comp-head">
+            <span className="pl-comp-name">
+              <Cpu size={14} />
+              Celery Workers
+            </span>
             <span className="badge ok">{bw?.status || 'Online'}</span>
           </div>
-          <div className="pipeline-card-val">{bw?.tasks_completed || 382}</div>
-          <div style={{ fontSize: '11.5px', color: 'var(--text-dim)' }}>
+          <div className="pl-comp-val">{bw?.tasks_completed || 382}</div>
+          <div className="pl-comp-sub">
             tasks completed · {bw?.workers_online || 4} workers online · Redis Broker
           </div>
         </div>
 
-        <div className="pipeline-card">
-          <div className="pipeline-card-head">
-            <span style={{ fontSize: '12.5px', fontWeight: 600, color: 'var(--text-muted)' }}>🔀 Event Router</span>
+        <div className="pl-comp c3">
+          <div className="pl-comp-head">
+            <span className="pl-comp-name">
+              <GitBranch size={14} />
+              Event Router
+            </span>
             <span className="badge ok">{er?.status || 'Active'}</span>
           </div>
-          <div className="pipeline-card-val">{stages.length} Ingested</div>
-          <div style={{ fontSize: '11.5px', color: 'var(--text-dim)' }}>
+          <div className="pl-comp-val">{stages.length} Ingested</div>
+          <div className="pl-comp-sub">
             {er?.pipelines_active || 3} active pipelines · {er?.routing_rules || 12} domain rules
           </div>
         </div>
 
-        <div className="pipeline-card">
-          <div className="pipeline-card-head">
-            <span style={{ fontSize: '12.5px', fontWeight: 600, color: 'var(--text-muted)' }}>🤖 Orchestrator</span>
+        <div className="pl-comp c4">
+          <div className="pl-comp-head">
+            <span className="pl-comp-name">
+              <Activity size={14} />
+              Orchestrator
+            </span>
             <span className="badge ok">{po?.status || 'Active'}</span>
           </div>
-          <div className="pipeline-card-val">{po?.runs_total || 94}</div>
-          <div style={{ fontSize: '11.5px', color: 'var(--text-dim)' }}>
+          <div className="pl-comp-val">{po?.runs_total || 94}</div>
+          <div className="pl-comp-sub">
             LangGraph DAG · {po?.steps_per_run || 4} steps/run · State Checkpoints
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Live Ingested Event Stream Header & Controls */}
-      <div style={{ marginTop: '20px', display: 'grid', gap: '12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+      <section className="pl-stream" aria-label="Live event stream">
+        <div className="pl-stream-head">
           <div>
-            <h3 style={{ fontSize: '16px', fontWeight: 800 }}>Live Ingested Messages &amp; Events Stream</h3>
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+            <span className="pl-section-eyebrow">Live Operational Feed</span>
+            <h2 className="pl-section-title">Ingested Messages &amp; Events Stream</h2>
+            <span className="pl-section-count">
               Showing {filteredStages.length} of {stages.length} live ingested operational events
             </span>
           </div>
 
           {/* Search Box */}
-          <div style={{ position: 'relative', width: '260px' }}>
+          <div className="pl-search">
+            <Search size={15} />
             <input
               type="text"
-              className="form-input"
               placeholder="Search messages, authors, keywords…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              style={{ width: '100%', paddingLeft: '32px', height: '34px', fontSize: '12px' }}
             />
-            <Search size={13} style={{ position: 'absolute', left: '10px', top: '10px', opacity: 0.5 }} />
           </div>
         </div>
 
         {/* Source Filter Tabs */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+        <div className="pl-filters">
           {[
             { id: 'all', label: 'All Sources', count: stages.length },
-            { id: 'slack', label: '💬 Slack', count: sourceCounts['slack'] || 0 },
-            { id: 'github', label: '🐙 GitHub', count: sourceCounts['github'] || 0 },
-            { id: 'gmail', label: '✉️ Gmail / Mail', count: sourceCounts['gmail'] || 0 },
-            { id: 'teams', label: '👥 Teams', count: sourceCounts['teams'] || 0 },
-            { id: 'jira', label: '🎯 Jira', count: sourceCounts['jira'] || 0 },
-            { id: 'notion', label: '📖 Notion', count: sourceCounts['notion'] || 0 },
+            { id: 'slack', label: 'Slack', count: sourceCounts['slack'] || 0 },
+            { id: 'github', label: 'GitHub', count: sourceCounts['github'] || 0 },
+            { id: 'gmail', label: 'Gmail / Mail', count: sourceCounts['gmail'] || 0 },
+            { id: 'teams', label: 'Teams', count: sourceCounts['teams'] || 0 },
+            { id: 'jira', label: 'Jira', count: sourceCounts['jira'] || 0 },
+            { id: 'notion', label: 'Notion', count: sourceCounts['notion'] || 0 },
           ].map((tab) => (
-            <button
-              key={tab.id}
-              className={`btn btn-sm ${selectedSource === tab.id ? 'btn-primary' : 'btn-ghost'}`}
-              onClick={() => setSelectedSource(tab.id)}
-              style={{ fontSize: '11.5px', padding: '4px 12px' }}
-            >
+            <button key={tab.id} className={`pl-filter ${selectedSource === tab.id ? 'active' : ''}`} onClick={() => setSelectedSource(tab.id)}>
               <span>{tab.label}</span>
-              <span className="badge" style={{ fontSize: '10px', padding: '1px 5px', marginLeft: '4px' }}>
-                {tab.count}
-              </span>
+              <span className="pl-filter-count">{tab.count}</span>
             </button>
           ))}
         </div>
 
         {/* Event List with Message Body Previews */}
-        <div className="event-stage-list">
+        <div className="pl-list">
           {filteredStages.length > 0 ? (
             filteredStages.map((evt) => {
               const isExpanded = expandedEventId === evt.id;
+              const accent = getSourceBadgeColor(evt.source);
               return (
-                <div
-                  key={evt.id}
-                  className="event-stage-item anim-slide-up"
-                  style={{
-                    gridTemplateColumns: '36px minmax(0, 1fr) auto',
-                    cursor: 'pointer',
-                    padding: '14px 18px',
-                    display: 'grid',
-                    gap: '12px',
-                    alignItems: 'start',
-                  }}
-                  onClick={() => setExpandedEventId(isExpanded ? null : evt.id)}
-                >
-                  <div className="esi-icon" style={{ fontSize: '18px', marginTop: '2px' }}>
-                    {getSourceIcon(evt.source)}
-                  </div>
+                <article key={evt.id} className="pl-event anim-slide-up" onClick={() => setExpandedEventId(isExpanded ? null : evt.id)}>
+                  <div className="pl-event-icon">{getSourceIcon(evt.source)}</div>
 
-                  <div className="esi-details" style={{ width: '100%' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                      <span
-                        className="badge"
-                        style={{
-                          background: 'rgba(255,255,255,0.06)',
-                          color: getSourceBadgeColor(evt.source),
-                          fontWeight: 700,
-                          fontSize: '11px',
-                        }}
-                      >
-                        {evt.source.toUpperCase()}
+                  <div className="pl-event-main">
+                    <div className="pl-event-topline">
+                      <span className="pl-source-chip" style={{ color: accent }}>
+                        {evt.source?.toUpperCase()}
                       </span>
-                      <strong style={{ fontSize: '14px', color: 'var(--text-main)' }}>{evt.title}</strong>
+                      <h3 className="pl-event-title">{evt.title}</h3>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '10px', fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '4px', alignItems: 'center' }}>
-                      <span>👤 Author: <strong style={{ color: 'var(--text-main)' }}>{evt.author || 'System'}</strong></span>
-                      <span>·</span>
-                      <span>🕒 {new Date(evt.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
-                      <span>·</span>
-                      <span>📅 {new Date(evt.ts).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
+                    <div className="pl-event-meta">
+                      <span className="pl-event-author">
+                        Author <strong>{evt.author || 'System'}</strong>
+                      </span>
+                      <span className="pl-meta-time">
+                        {new Date(evt.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                      </span>
+                      <span className="pl-meta-time">
+                        {new Date(evt.ts).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                      </span>
                     </div>
 
-                    {/* Message Body Content */}
                     {evt.content && (
                       <div
-                        style={{
-                          marginTop: '8px',
-                          background: 'rgba(0,0,0,0.25)',
-                          borderLeft: `3px solid ${getSourceBadgeColor(evt.source)}`,
-                          borderRadius: '0 6px 6px 0',
-                          padding: '8px 12px',
-                          fontSize: '12.5px',
-                          color: '#e2e8f0',
-                          lineHeight: '1.45',
-                        }}
+                        className={`pl-content-preview ${isExpanded ? 'open' : ''}`}
+                        style={{ borderLeftColor: accent }}
                       >
-                        "{evt.content}"
+                        {evt.content}
                       </div>
                     )}
+                    <span className="pl-expand-hint">{isExpanded ? 'Collapse preview' : 'Expand full content'}</span>
                   </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
-                    <span className="badge ok" style={{ fontSize: '10px' }}>
-                      ✓ {evt.stage?.toUpperCase() || 'PROCESSED'}
-                    </span>
-                    <span className="layer-chip l2" style={{ fontSize: '10px', padding: '2px 6px' }}>
-                      {evt.type?.replace(/_/g, ' ').toUpperCase() || 'EVENT'}
-                    </span>
+                  <div className="pl-event-side">
+                    <span className="badge ok">{evt.stage?.toUpperCase() || 'PROCESSED'}</span>
+                    <span className="pl-stage-chip">{evt.type?.replace(/_/g, ' ').toUpperCase() || 'EVENT'}</span>
                   </div>
-                </div>
+                </article>
               );
             })
           ) : (
-            <div className="pipeline-card" style={{ textAlign: 'center', padding: '40px' }}>
-              <p style={{ color: 'var(--text-muted)' }}>
-                {searchQuery ? `No messages match "${searchQuery}".` : `No live events found for source "${selectedSource}".`}
-              </p>
+            <div className="pl-empty">
+              <div className="pl-empty-icon">
+                <Radio size={22} />
+              </div>
+              <div className="pl-empty-title">
+                {searchQuery ? `No messages match "${searchQuery}"` : `No live events for source "${selectedSource}"`}
+              </div>
+              <div className="pl-empty-sub">
+                Try a different filter, clear the search, or simulate a new event to populate the live stream.
+              </div>
             </div>
           )}
         </div>
-      </div>
+      </section>
 
       {/* Compose Custom Event Modal */}
       {showCustomModal && (
-        <div className="modal-overlay" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'grid', placeItems: 'center', zIndex: 9999 }}>
-          <div className="modal-card anim-scale-in" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-strong)', borderRadius: '12px', width: '90%', maxWidth: '520px', padding: '24px', boxShadow: '0 20px 40px rgba(0,0,0,0.8)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-              <h3 style={{ fontSize: '17px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Sparkles size={18} color="#60a5fa" /> Ingest Real-Time Operational Event
-              </h3>
-              <button className="btn btn-ghost" onClick={() => setShowCustomModal(false)} style={{ padding: '4px' }}>
+        <div className="pl-modal-overlay">
+          <div className="pl-modal anim-scale-in">
+            <div className="pl-modal-head">
+              <div>
+                <span className="pl-modal-eyebrow">Ingestion Simulator</span>
+                <h2 className="pl-modal-title">
+                  <Sparkles size={18} />
+                  Ingest Real-Time Operational Event
+                </h2>
+              </div>
+              <button className="btn btn-ghost" onClick={() => setShowCustomModal(false)} aria-label="Close modal">
                 <X size={16} />
               </button>
             </div>
 
-            <form onSubmit={handleSendCustomEvent} style={{ display: 'grid', gap: '12px' }}>
-              <div>
-                <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Source Platform</label>
-                <select
-                  className="form-input"
-                  value={customSource}
-                  onChange={(e) => setCustomSource(e.target.value)}
-                  style={{ width: '100%' }}
-                >
-                  <option value="slack">💬 Slack Channel</option>
-                  <option value="github">🐙 GitHub Pull Request / Issue</option>
-                  <option value="gmail">✉️ Gmail / Email Notification</option>
-                  <option value="teams">👥 Microsoft Teams Chat</option>
-                  <option value="jira">🎯 Jira Ticket</option>
-                  <option value="notion">📖 Notion Knowledge Base</option>
+            <form onSubmit={handleSendCustomEvent} className="pl-form">
+              <div className="pl-field">
+                <label className="pl-field-label">Source Platform</label>
+                <select className="pl-input" value={customSource} onChange={(e) => setCustomSource(e.target.value)}>
+                  <option value="slack">Slack Channel</option>
+                  <option value="github">GitHub Pull Request / Issue</option>
+                  <option value="gmail">Gmail / Email Notification</option>
+                  <option value="teams">Microsoft Teams Chat</option>
+                  <option value="jira">Jira Ticket</option>
+                  <option value="notion">Notion Knowledge Base</option>
                 </select>
               </div>
 
-              <div>
-                <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Sender / Author</label>
+              <div className="pl-field">
+                <label className="pl-field-label">Sender / Author</label>
                 <input
                   type="text"
-                  className="form-input"
+                  className="pl-input"
                   placeholder="e.g., Priya Raman (Platform Lead) or billing-ops@company.com"
                   value={customAuthor}
                   onChange={(e) => setCustomAuthor(e.target.value)}
-                  style={{ width: '100%' }}
                 />
               </div>
 
-              <div>
-                <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Subject / Event Title</label>
+              <div className="pl-field">
+                <label className="pl-field-label">Subject / Event Title</label>
                 <input
                   type="text"
-                  className="form-input"
+                  className="pl-input"
                   placeholder="e.g., Payment Auth RFC Approved: Migrate to OAuth2"
                   value={customTitle}
                   onChange={(e) => setCustomTitle(e.target.value)}
-                  style={{ width: '100%' }}
                 />
               </div>
 
-              <div>
-                <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Message Body / Decision Content *</label>
+              <div className="pl-field">
+                <label className="pl-field-label">Message Body / Decision Content *</label>
                 <textarea
-                  className="form-input"
+                  className="pl-input"
                   rows={4}
                   placeholder="e.g., Decision confirmed today: All internal payment calls are migrating from JWT to OAuth2 client credentials. Support for JWT ends in September."
                   value={customContent}
                   onChange={(e) => setCustomContent(e.target.value)}
-                  style={{ width: '100%', resize: 'vertical' }}
                   required
                 />
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '8px' }}>
+              <div className="pl-form-actions">
                 <button type="button" className="btn btn-ghost" onClick={() => setShowCustomModal(false)}>
                   Cancel
                 </button>

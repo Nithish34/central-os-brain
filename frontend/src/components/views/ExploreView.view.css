@@ -1,0 +1,310 @@
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ExploreView — "What We Know"
+   Answer Layer: non-technical, higher whitespace, plain language.
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+.explore-view {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 40px 28px 60px;
+}
+
+/* ── Header ── */
+.explore-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+}
+
+.explore-header-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.explore-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary, #f1f5f9);
+  margin: 0 0 8px;
+  letter-spacing: -0.5px;
+}
+
+.explore-subtitle {
+  font-size: 14px;
+  color: var(--text-muted, #94a3b8);
+  margin: 0;
+  line-height: 1.6;
+  max-width: 560px;
+}
+
+/* Health Pill */
+.explore-health-pill {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 12.5px;
+  color: var(--text-muted, #94a3b8);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.explore-health-icon.ok {
+  color: #10b981;
+}
+.explore-health-icon.warn {
+  color: #f59e0b;
+}
+
+/* ── Search Bar ── */
+.explore-search-wrap {
+  position: relative;
+  margin-bottom: 36px;
+}
+
+.explore-search-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-dim, #64748b);
+  pointer-events: none;
+}
+
+.explore-search-input {
+  width: 100%;
+  padding: 14px 44px 14px 44px;
+  font-size: 15px;
+  background: var(--bg-surface, #0d1525);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  color: var(--text-primary, #f1f5f9);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+}
+
+.explore-search-input::placeholder {
+  color: var(--text-dim, #64748b);
+}
+
+.explore-search-input:focus {
+  border-color: rgba(59, 130, 246, 0.5);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1), 0 2px 12px rgba(0, 0, 0, 0.2);
+}
+
+.explore-search-clear {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-dim, #64748b);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  line-height: 1;
+  transition: color 0.15s;
+}
+.explore-search-clear:hover {
+  color: var(--text-muted, #94a3b8);
+}
+
+/* ── Topics Section ── */
+.explore-topics-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.explore-section-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim, #64748b);
+  margin-bottom: 12px;
+}
+
+/* ── Topic Cards ── */
+.explore-topic-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.explore-topic-card {
+  background: var(--bg-surface, #0d1525);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  padding: 16px 18px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+
+.explore-topic-card:hover {
+  background: var(--bg-surface-raised, #111d32);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+}
+
+.explore-topic-card.expanded {
+  border-color: rgba(59, 130, 246, 0.25);
+  background: var(--bg-surface-raised, #111d32);
+}
+
+.explore-topic-card.stale {
+  border-left: 3px solid rgba(245, 158, 11, 0.4);
+}
+
+.explore-topic-main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.explore-topic-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.explore-topic-key {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary, #cbd5e1);
+  margin-bottom: 4px;
+  text-transform: capitalize;
+}
+
+.explore-topic-value {
+  font-size: 14px;
+  color: var(--text-primary, #f1f5f9);
+  margin: 0;
+  line-height: 1.55;
+}
+
+.explore-topic-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Freshness label */
+.explore-freshness-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.explore-freshness-label.fresh {
+  color: var(--text-dim, #64748b);
+}
+
+.explore-freshness-label.stale {
+  color: #f59e0b;
+}
+
+/* Chevron */
+.explore-chevron {
+  color: var(--text-dim, #64748b);
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+.explore-chevron.rotated {
+  transform: rotate(90deg);
+}
+
+/* Expanded section */
+.explore-topic-expanded {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.explore-verified-by {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-muted, #94a3b8);
+}
+.explore-verified-icon {
+  color: #10b981;
+  flex-shrink: 0;
+}
+
+.explore-stale-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  font-size: 12px;
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: 8px;
+  padding: 8px 12px;
+  line-height: 1.5;
+}
+.explore-stale-notice svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* ── Empty State ── */
+.explore-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 48px 20px;
+  color: var(--text-dim, #64748b);
+  text-align: center;
+}
+.explore-empty-icon {
+  opacity: 0.4;
+}
+.explore-empty p {
+  font-size: 14px;
+  color: var(--text-muted, #94a3b8);
+  max-width: 360px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  .explore-view {
+    padding: 24px 16px 40px;
+  }
+  .explore-title {
+    font-size: 22px;
+  }
+  .explore-topic-main {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .explore-topic-meta {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+}

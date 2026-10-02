@@ -1,0 +1,870 @@
+/* ==========================================================================
+   SaleSkip / Axiom OS — Login & Sign Up Design System
+   Exact visual match for uploaded references (Login split & 3D Glass Sign Up)
+   ========================================================================== */
+
+/* --- Google Font Import --- */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --font-primary: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+  --color-saleskip-blue: #233dfb;
+  --color-saleskip-blue-dark: #192ec7;
+  --color-saleskip-blue-light: #445eff;
+  --color-bg-lavender: #a3b5fd;
+  --color-bg-lavender-dark: #8c9ff4;
+}
+
+/* Base Fullscreen Container */
+.auth-page-root {
+  min-height: 100vh;
+  width: 100vw;
+  font-family: var(--font-primary);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow-x: hidden;
+  transition: background 0.4s ease;
+  box-sizing: border-box;
+}
+
+/* --------------------------------------------------------------------------
+   MODE 1: LOGIN PAGE (Image 1 - Split Hero Cobalt Blue & White Form)
+   -------------------------------------------------------------------------- */
+
+.auth-page-root.login-mode {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.login-split-layout {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+  position: relative;
+}
+
+/* Navigation / Home Back Link */
+.auth-floating-nav {
+  position: absolute;
+  top: 24px;
+  right: 32px;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.auth-nav-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  padding: 8px 16px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.auth-nav-pill-btn:hover {
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+/* Left Hero Column: Royal Blue Banner */
+.login-hero-pane {
+  flex: 1.1;
+  background: linear-gradient(145deg, #1f3cf7 0%, #2945fc 45%, #1833e0 100%);
+  position: relative;
+  overflow: hidden;
+  padding: 60px 80px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  color: #ffffff;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+/* Background Geometric Line Art Overlay */
+.login-hero-svg-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0.22;
+  z-index: 1;
+}
+
+/* Soft frosted white blend on right edge of blue hero */
+.login-hero-edge-glow {
+  position: absolute;
+  top: 0;
+  right: -80px;
+  width: 160px;
+  height: 100%;
+  background: radial-gradient(ellipse at right center, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 70%);
+  filter: blur(35px);
+  pointer-events: none;
+  z-index: 3;
+}
+
+/* Hero Content */
+.login-hero-content {
+  position: relative;
+  z-index: 2;
+  max-width: 460px;
+  margin: auto 0;
+}
+
+/* 8-Point Asterisk / Star Icon */
+.login-hero-star-icon {
+  width: 72px;
+  height: 72px;
+  margin-bottom: 48px;
+  color: #ffffff;
+  filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.15));
+  animation: heroStarFloat 6s ease-in-out infinite alternate;
+}
+
+@keyframes heroStarFloat {
+  0% { transform: translateY(0) rotate(0deg); }
+  100% { transform: translateY(-6px) rotate(8deg); }
+}
+
+.login-hero-title {
+  font-family: var(--font-display);
+  font-size: 58px;
+  font-weight: 800;
+  line-height: 1.12;
+  letter-spacing: -0.03em;
+  margin: 0 0 24px 0;
+  color: #ffffff;
+}
+
+.login-hero-title span.wave-hand {
+  display: inline-block;
+  margin-left: 8px;
+  transform-origin: 70% 70%;
+  animation: waveHand 2.4s infinite ease-in-out;
+}
+
+@keyframes waveHand {
+  0%, 100% { transform: rotate(0deg); }
+  20% { transform: rotate(14deg); }
+  40% { transform: rotate(-8deg); }
+  60% { transform: rotate(14deg); }
+  80% { transform: rotate(-4deg); }
+}
+
+.login-hero-desc {
+  font-size: 18px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.88);
+  font-weight: 400;
+  margin: 0;
+  max-width: 420px;
+}
+
+/* Hero Footer */
+.login-hero-footer {
+  position: relative;
+  z-index: 2;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.65);
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+
+/* Right Form Column: Clean White Canvas */
+.login-form-pane {
+  flex: 0.9;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 60px 80px;
+  position: relative;
+  z-index: 4;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+.login-form-container {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Brand Title Top */
+.login-brand-header {
+  margin-bottom: 48px;
+}
+
+.login-brand-logo-text {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #09090b;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.login-form-headline {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  color: #09090b;
+  margin: 0 0 10px 0;
+}
+
+.login-form-subtext {
+  font-size: 14px;
+  color: #64748b;
+  line-height: 1.5;
+  margin: 0 0 36px 0;
+}
+
+.login-form-subtext a,
+.login-form-subtext button {
+  color: #0f172a;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: inherit;
+  font-family: inherit;
+}
+
+.login-form-subtext a:hover,
+.login-form-subtext button:hover {
+  color: var(--color-saleskip-blue);
+}
+
+/* Form Inputs - Underline / Clean Flat Style matching reference */
+.login-field-group {
+  margin-bottom: 26px;
+  position: relative;
+}
+
+.login-input-underline-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border-bottom: 2px solid #e2e8f0;
+  transition: border-color 0.2s ease;
+  padding-bottom: 4px;
+}
+
+.login-input-underline-wrap.focused {
+  border-bottom-color: #09090b;
+}
+
+.login-input-underline {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: var(--font-primary);
+  font-size: 15px;
+  font-weight: 500;
+  color: #0f172a;
+  padding: 10px 0;
+  transition: all 0.2s ease;
+}
+
+.login-input-underline::placeholder {
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+.login-pwd-toggle-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease;
+}
+
+.login-pwd-toggle-btn:hover {
+  color: #0f172a;
+}
+
+/* Primary CTA Button: Deep Black Rounded */
+.login-primary-btn {
+  width: 100%;
+  background: #11141a;
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  padding: 15px 24px;
+  font-family: var(--font-primary);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 12px;
+  margin-bottom: 14px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.14);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.login-primary-btn:hover:not(:disabled) {
+  background: #000000;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+.login-primary-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.login-primary-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* Secondary Button: Google OAuth Rounded Bordered */
+.login-google-btn {
+  width: 100%;
+  background: #ffffff;
+  color: #1e293b;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 13px 24px;
+  font-family: var(--font-primary);
+  font-size: 14.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 24px;
+  transition: all 0.2s ease;
+}
+
+.login-google-btn:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.04);
+}
+
+/* Forget Password Link */
+.login-forgot-pwd {
+  text-align: center;
+  font-size: 13.5px;
+  color: #64748b;
+}
+
+.login-forgot-pwd button {
+  background: none;
+  border: none;
+  color: #09090b;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  padding: 0;
+  font-size: inherit;
+  font-family: inherit;
+  margin-left: 4px;
+}
+
+.login-forgot-pwd button:hover {
+  color: var(--color-saleskip-blue);
+}
+
+/* 1-Click Demo Evaluation Box (Discreet helper) */
+.login-demo-personas {
+  margin-top: 36px;
+  padding-top: 20px;
+  border-top: 1px dashed #e2e8f0;
+}
+
+.login-demo-personas-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  color: #94a3b8;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.login-demo-pill-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.login-demo-pill {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s ease;
+}
+
+.login-demo-pill:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+
+/* --------------------------------------------------------------------------
+   MODE 2: SIGN UP PAGE (Image 2 - 3D Glassmorphic Card on Lavender Space)
+   -------------------------------------------------------------------------- */
+
+.auth-page-root.signup-mode {
+  background: radial-gradient(circle at 50% 30%, #a8bcfd 0%, #8ca2f4 50%, #768ef0 100%);
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  position: relative;
+  padding: 40px 20px;
+}
+
+/* Floating 3D Aesthetic Objects (Shapes from Image 2) */
+.signup-3d-scene {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 1;
+}
+
+/* 3D Cube (Top Right) */
+.shape-3d-cube {
+  position: absolute;
+  top: 12%;
+  right: 14%;
+  width: 130px;
+  height: 130px;
+  transform: rotate(-15deg) rotateY(25deg) rotateX(15deg);
+  transform-style: preserve-3d;
+  filter: drop-shadow(0 20px 30px rgba(28, 54, 180, 0.35));
+  animation: floatCube 8s ease-in-out infinite alternate;
+}
+
+@keyframes floatCube {
+  0% { transform: translateY(0) rotate(-15deg) rotateY(25deg) rotateX(15deg); }
+  100% { transform: translateY(-16px) rotate(-10deg) rotateY(35deg) rotateX(20deg); }
+}
+
+/* SVG Cube Face simulation */
+.cube-svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* 3D Torus / Donut (Bottom Left) */
+.shape-3d-torus {
+  position: absolute;
+  bottom: 8%;
+  left: 10%;
+  width: 150px;
+  height: 150px;
+  transform: rotate(35deg) rotateX(45deg);
+  filter: drop-shadow(0 24px 35px rgba(25, 45, 170, 0.4));
+  animation: floatTorus 9s ease-in-out infinite alternate;
+}
+
+@keyframes floatTorus {
+  0% { transform: translateY(0) rotate(35deg) rotateX(45deg); }
+  100% { transform: translateY(18px) rotate(45deg) rotateX(55deg); }
+}
+
+/* 3D Cylinder / Capsule (Bottom Right Blur) */
+.shape-3d-cylinder {
+  position: absolute;
+  bottom: 12%;
+  right: 18%;
+  width: 90px;
+  height: 90px;
+  background: radial-gradient(circle at 35% 35%, #2a4df8 0%, #152fb4 100%);
+  border-radius: 50%;
+  filter: blur(12px) drop-shadow(0 15px 25px rgba(0, 0, 0, 0.3));
+  opacity: 0.85;
+  animation: floatBlurPill 7s ease-in-out infinite alternate;
+}
+
+@keyframes floatBlurPill {
+  0% { transform: translateY(0) scale(1); }
+  100% { transform: translateY(-20px) scale(1.08); }
+}
+
+/* Top Right Star / Jack geometric object */
+.shape-3d-jack {
+  position: absolute;
+  top: 18%;
+  right: 8%;
+  width: 75px;
+  height: 75px;
+  opacity: 0.6;
+  filter: drop-shadow(0 10px 15px rgba(40, 60, 150, 0.25));
+}
+
+/* Main Frosted Glass Card (Image 2) */
+.signup-glass-card {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  max-width: 820px;
+  background: rgba(235, 241, 255, 0.48);
+  backdrop-filter: blur(36px) saturate(160%);
+  -webkit-backdrop-filter: blur(36px) saturate(160%);
+  border: 1.5px solid rgba(255, 255, 255, 0.75);
+  border-radius: 36px;
+  box-shadow: 
+    0 30px 70px rgba(35, 55, 140, 0.22),
+    0 10px 25px rgba(0, 0, 0, 0.05),
+    inset 0 1px 2px rgba(255, 255, 255, 0.9);
+  padding: 50px 56px;
+  display: grid;
+  grid-template-columns: 1.15fr 0.95fr;
+  gap: 50px;
+  box-sizing: border-box;
+  animation: cardFadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes cardFadeUp {
+  0% { opacity: 0; transform: translateY(20px) scale(0.98); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Left Column: Form Pill Inputs */
+.signup-left-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.signup-card-title {
+  font-family: var(--font-display);
+  font-size: 38px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #0b0f19;
+  margin: 0 0 32px 0;
+}
+
+.signup-input-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* White Pill Capsule Input */
+.signup-pill-input-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.signup-pill-input {
+  width: 100%;
+  background: rgba(248, 250, 255, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  border-radius: 9999px; /* Pill Capsule shape */
+  padding: 16px 24px;
+  font-family: var(--font-primary);
+  font-size: 15px;
+  font-weight: 500;
+  color: #1e293b;
+  box-shadow: 
+    inset 0 2px 4px rgba(0, 0, 0, 0.02),
+    0 4px 12px rgba(45, 60, 130, 0.06);
+  outline: none;
+  box-sizing: border-box;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.signup-pill-input::placeholder {
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+.signup-pill-input:focus {
+  background: #ffffff;
+  border-color: #3b82f6;
+  box-shadow: 
+    0 0 0 3px rgba(59, 130, 246, 0.2),
+    0 6px 16px rgba(45, 60, 130, 0.08);
+}
+
+.signup-pill-toggle {
+  position: absolute;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.signup-pill-toggle:hover {
+  color: #1e293b;
+}
+
+/* Right Column: Actions & Social Sign In */
+.signup-right-col {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Primary Black Pill Sign Up Button */
+.signup-primary-pill-btn {
+  width: 100%;
+  background: #0d1117;
+  color: #ffffff;
+  border: none;
+  border-radius: 9999px;
+  padding: 17px 28px;
+  font-family: var(--font-primary);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.signup-primary-pill-btn:hover:not(:disabled) {
+  background: #000000;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.32);
+}
+
+.signup-primary-pill-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.signup-primary-pill-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* "Already have an account? Log in" */
+.signup-login-prompt {
+  text-align: center;
+  font-size: 13.5px;
+  color: #475569;
+  margin-top: 18px;
+  margin-bottom: 20px;
+}
+
+.signup-login-prompt button {
+  background: none;
+  border: none;
+  color: #0b0f19;
+  font-weight: 800;
+  cursor: pointer;
+  padding: 0;
+  font-size: inherit;
+  font-family: inherit;
+  margin-left: 4px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.signup-login-prompt button:hover {
+  color: var(--color-saleskip-blue);
+}
+
+/* "Or" Divider */
+.signup-or-divider {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  margin: 0 0 18px 0;
+  position: relative;
+}
+
+/* Social Capsule Buttons */
+.signup-social-btn-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.signup-social-pill-btn {
+  width: 100%;
+  background: rgba(248, 250, 255, 0.35);
+  border: 1.5px solid rgba(100, 116, 139, 0.4);
+  border-radius: 9999px;
+  padding: 13px 24px;
+  font-family: var(--font-primary);
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.signup-social-pill-btn:hover {
+  background: rgba(255, 255, 255, 0.75);
+  border-color: rgba(71, 85, 105, 0.7);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(45, 60, 130, 0.08);
+}
+
+/* Quick Mode Switcher Floating Badge */
+.auth-mode-switch-badge {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+  padding: 6px 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 200;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+}
+
+.auth-mode-switch-item {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-family: var(--font-primary);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 18px;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.auth-mode-switch-item.active {
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.auth-mode-switch-item:hover:not(.active) {
+  color: #ffffff;
+}
+
+/* Loading Spinner */
+.auth-spinner {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* --------------------------------------------------------------------------
+   RESPONSIVE DESIGN BREAKPOINTS
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 1024px) {
+  .login-split-layout {
+    flex-direction: column;
+  }
+  .login-hero-pane {
+    padding: 60px 40px 40px 40px;
+    min-height: auto;
+  }
+  .login-form-pane {
+    padding: 50px 40px;
+    min-height: auto;
+  }
+  .signup-glass-card {
+    grid-template-columns: 1fr;
+    gap: 36px;
+    padding: 40px 32px;
+  }
+  .shape-3d-cube {
+    right: 5%;
+    width: 90px;
+    height: 90px;
+  }
+  .shape-3d-torus {
+    left: 2%;
+    width: 100px;
+    height: 100px;
+  }
+}
+
+@media (max-width: 640px) {
+  .login-hero-title {
+    font-size: 40px;
+  }
+  .login-hero-star-icon {
+    width: 52px;
+    height: 52px;
+    margin-bottom: 30px;
+  }
+  .login-form-headline {
+    font-size: 26px;
+  }
+  .signup-card-title {
+    font-size: 30px;
+  }
+  .signup-glass-card {
+    padding: 32px 20px;
+    border-radius: 24px;
+  }
+  .auth-floating-nav {
+    top: 16px;
+    right: 16px;
+  }
+}

@@ -2,7 +2,8 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "backend"))
+sys.path.insert(0, str(ROOT / "fast_api_server"))
+sys.path.insert(0, str(ROOT))
 
 from app.core.database import init_db, SessionLocal
 from app.services.layer1_data.db_service import DataService
@@ -53,7 +54,9 @@ def main():
         # 3. Layer 2 — RAG Hybrid Search
         search_res = RAGEngineService.hybrid_search(db, "OAuth2 JWT payment authentication", top_k=2)
         require(len(search_res) > 0, "Expected hybrid search results")
-        results.append(("Layer 2: RAG Hybrid Search Engine", "PASS", f"Top match: '{search_res[0]['title']}' (Score: {search_res[0]['score']})"))
+        top_title = search_res[0].get("document_title") or search_res[0].get("title", "Doc")
+        results.append(("Layer 2: RAG Hybrid Search Engine", "PASS", f"Top match: '{top_title}' (Score: {search_res[0]['score']})"))
+
 
         # 4. Layer 2 — Conflict Contradiction Scoring & Enrichment
         primary_conf = next(c for c in conflicts if c.id == "conflict-auth-method")

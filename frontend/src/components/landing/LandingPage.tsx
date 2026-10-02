@@ -36,12 +36,25 @@ import {
   Network,
   Share2,
 } from 'lucide-react';
+import { UserProfile } from '../../types';
 
 interface LandingPageProps {
+  currentUser?: UserProfile | null;
   onLaunchApp: (targetView?: string) => void;
 }
 
-export const LandingPage: React.FC<LandingPageProps> = ({ onLaunchApp }) => {
+export const LandingPage: React.FC<LandingPageProps> = ({ currentUser, onLaunchApp }) => {
+  // Check auth status: redirect to target view if signed in, else redirect to sign in page
+  const handleLaunchApp = (targetView: string = 'chat') => {
+    const token = localStorage.getItem('cb_token');
+    const isLoggedIn = !!currentUser && currentUser.id !== 'anon' && !!token;
+    if (isLoggedIn) {
+      onLaunchApp(targetView);
+    } else {
+      onLaunchApp('login');
+    }
+  };
+
   // Rotator text for hero headline
   const [rotatorIndex, setRotatorIndex] = useState(0);
   const rotatorTexts = [
@@ -316,7 +329,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunchApp }) => {
       role: 'Dual Relational & Spatial Storage',
       color: '#3b82f6',
       badge: 'L1 STORAGE',
-      desc: 'Dual-model persistence combining pgvector (1536-dimensional semantic embeddings) with Neo4j Knowledge Graph nodes to map dependencies across documents and operational teams.',
+      desc: 'Dual-model persistence combining PostgreSQL + pgvector (1536-dimensional semantic embeddings) with Neo4j Knowledge Graph nodes to map dependencies across documents and operational teams.',
       metrics: ['pgvector Cosine Search', 'Neo4j Dependency Graph', 'Immutable Hash-Chained Audit Trail'],
     },
     {
@@ -326,25 +339,25 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunchApp }) => {
       color: '#10b981',
       badge: 'L2 COGNITION',
       desc: 'Specialized autonomous domain agents (Engineering, SRE, Product, Security) continuously cross-examine ingested communication events against official documentation to detect factual drift.',
-      metrics: ['85%+ Contradiction Confidence', 'Automated Patch Generation', 'Short-Term Memory Context'],
+      metrics: ['85%+ Contradiction Confidence', 'Automated Patch Generation', 'Deterministic Vector UPSERT'],
     },
     {
       layer: 'Layer 3',
-      name: 'Real-Time Ingestion Pipeline',
-      role: 'Event Bus & Celery Workers',
+      name: 'Transactional Outbox & Redis Streams',
+      role: 'Phase 4 Event-Driven Streaming Engine',
       color: '#8b5cf6',
-      badge: 'L3 PIPELINE',
-      desc: 'High-throughput event streaming bus processing inbound webhooks from Slack, GitHub PRs, Microsoft Teams, Gmail, Jira, and Confluence with microsecond deduplication.',
-      metrics: ['Event Bus Stream', 'Distributed Celery Workers', 'Async Normalization'],
+      badge: 'L3 EVENT STREAMING',
+      desc: 'Authoritative PostgreSQL Canonical Event ledger paired with SKIP LOCKED outbox publisher and partitioned Redis Streams for guaranteed at-least-once delivery with run-identity replay.',
+      metrics: ['SELECT FOR UPDATE SKIP LOCKED', 'Partitioned Redis Streams', 'Run-Identity Replay Center'],
     },
     {
       layer: 'Layer 4 & 5',
-      name: 'Enterprise Connectors & RBAC',
-      role: 'Webhooks, Auth & API Gateway',
+      name: 'Multi-Consumer Groups & Universal Ingest',
+      role: 'Late-ACK Workers & Webhook Gateways',
       color: '#06b6d4',
-      badge: 'L4/L5 GOVERNANCE',
-      desc: 'Zero-trust JWT authentication, role-based access control with granular permission gates, and standardized normalizers for enterprise SaaS ecosystems.',
-      metrics: ['6 Pre-Built Connectors', '13 Granular RBAC Permissions', 'FastAPI High-Speed Endpoints'],
+      badge: 'L4/L5 PIPELINE',
+      desc: 'Independent consumer groups (knowledge, workflow, audit) with Late-ACK execution, Dead Letter Queues, HMAC-SHA256 signature verification, and OAuth 2.0 PKCE multi-tenancy.',
+      metrics: ['3 Isolated Consumer Groups', 'Exponential Backoff DLQ', 'HMAC Webhook Signatures'],
     },
   ];
 
@@ -459,11 +472,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunchApp }) => {
 
           {/* Right Action Controls */}
           <div className="landing-nav-actions">
-            <button className="btn btn-ghost-nav" onClick={() => onLaunchApp('inbox')}>
-              <Shield size={14} color="#3b82f6" />
-              <span>Conflict Triage</span>
+            <button className="btn btn-ghost-nav" onClick={() => onLaunchApp('login')}>
+              <span>Sign In</span>
             </button>
-            <button className="btn btn-launch-nav" onClick={() => onLaunchApp('chat')}>
+            <button className="btn btn-launch-nav" onClick={() => handleLaunchApp('chat')}>
               <span>Launch App</span>
               <ArrowRight size={14} />
             </button>
@@ -471,45 +483,49 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunchApp }) => {
         </div>
       </header>
 
-      {/* ── Hero Section with 3D Holographic Brain & Floating HUD ── */}
+      {/* ── Hero — Inspo Marquee Hero: mono dateline + type as design ── */}
       <section id="hero-showcase" className="landing-hero">
         <div className="hero-glow-bg"></div>
         <div className="hero-container">
-          <div className="hero-badge-pill anim-scale-in">
-            <span className="pulse-dot"></span>
-            <span>✨ Introducing Axiom OS 2.0 · Autonomous Self-Healing for Enterprise Knowledge</span>
+
+          {/* Centered text content — constrained width */}
+          <div className="hero-body">
+            <div className="hero-badge-pill anim-scale-in">
+              <span className="pulse-dot"></span>
+              <span>Axiom OS 2.0 · Autonomous self-healing for enterprise knowledge</span>
+            </div>
+
+            <h1 className="hero-headline anim-slide-up">
+              The self-healing operating system for{' '}
+              <span className="title-gradient">enterprise knowledge.</span>
+            </h1>
+
+            {/* Dynamic Animated Headline Sub-Rotator */}
+            <div className="hero-rotator-wrap anim-slide-up">
+              <span className="rotator-prefix">Continuous AI reasoning that:</span>
+              <strong className="rotator-text-animated" key={rotatorIndex}>
+                {rotatorTexts[rotatorIndex]}
+              </strong>
+            </div>
+
+            <p className="hero-subhead anim-slide-up">
+              Continuously ingests events, detects knowledge drift, and orchestrates governed self-healing updates.
+            </p>
+
+            <div className="hero-cta-row anim-slide-up">
+              <button className="btn btn-primary btn-hero-lg" onClick={() => handleLaunchApp('chat')}>
+                <Sparkles size={16} />
+                <span>Launch AI Command Center</span>
+                <ArrowRight size={16} />
+              </button>
+              <a href="#simulator" className="btn btn-ghost btn-hero-lg">
+                <Play size={15} color="#849cfc" />
+                <span>Try Interactive Simulator</span>
+              </a>
+            </div>
           </div>
 
-          <h1 className="hero-headline anim-slide-up">
-            The Self-Healing Operating System For{' '}
-            <span className="title-gradient">Enterprise Knowledge</span>
-          </h1>
-
-          {/* Dynamic Animated Headline Sub-Rotator */}
-          <div className="hero-rotator-wrap anim-slide-up">
-            <span className="rotator-prefix">Continuous AI reasoning that:</span>
-            <strong className="rotator-text-animated" key={rotatorIndex}>
-              {rotatorTexts[rotatorIndex]}
-            </strong>
-          </div>
-
-          <p className="hero-subhead anim-slide-up">
-            Stop silent documentation drift. Axiom OS continuously ingests Slack, GitHub, Teams &amp; Gmail, detects when reality diverges from official specs, and safely executes self-healing updates with Layer 0 policy governance.
-          </p>
-
-          <div className="hero-cta-row anim-slide-up">
-            <button className="btn btn-primary btn-hero-lg" onClick={() => onLaunchApp('chat')}>
-              <Sparkles size={16} />
-              <span>Launch AI Command Center</span>
-              <ArrowRight size={16} />
-            </button>
-            <a href="#simulator" className="btn btn-secondary btn-hero-lg">
-              <Play size={15} color="#60a5fa" />
-              <span>Try Interactive Simulator</span>
-            </a>
-          </div>
-
-          {/* ── 3D Holographic Visual Stage with Live Telemetry HUD ── */}
+          {/* ── Hero Visual Stage — wider than the text content ── */}
           <div className="hero-visual-stage anim-scale-in">
             <div className="hero-image-wrapper">
               <img
@@ -537,7 +553,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunchApp }) => {
               </div>
 
               <div className="hud-badge hud-bottom-left anim-fade-in">
-                <Activity size={14} color="#60a5fa" />
+                <Activity size={14} color="#849cfc" />
                 <div>
                   <strong>Sub-3.5s Ingestion</strong>
                   <span>Slack · GitHub · Jira · Teams</span>
@@ -552,32 +568,34 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunchApp }) => {
                 </div>
               </div>
             </div>
+
+            {/* Key Metrics Bar — glass strip anchored below the mockup */}
+            <div className="hero-stats-row">
+              <div className="hero-stat-card">
+                <strong>100%</strong>
+                <span>Autonomous Drift Detection</span>
+              </div>
+              <div className="hero-stat-divider"></div>
+              <div className="hero-stat-card">
+                <strong>&lt; 3.5s</strong>
+                <span>Real-Time Ingestion &amp; RAG</span>
+              </div>
+              <div className="hero-stat-divider"></div>
+              <div className="hero-stat-card">
+                <strong>Layer 0</strong>
+                <span>Pre-Approval Safety Gate</span>
+              </div>
+              <div className="hero-stat-divider"></div>
+              <div className="hero-stat-card">
+                <strong>Zero</strong>
+                <span>Knowledge Decay Outages</span>
+              </div>
+            </div>
           </div>
 
-          {/* Key Metrics Bar */}
-          <div className="hero-stats-row">
-            <div className="hero-stat-card">
-              <strong>100%</strong>
-              <span>Autonomous Drift Detection</span>
-            </div>
-            <div className="hero-stat-divider"></div>
-            <div className="hero-stat-card">
-              <strong>&lt; 3.5s</strong>
-              <span>Real-Time Ingestion &amp; RAG</span>
-            </div>
-            <div className="hero-stat-divider"></div>
-            <div className="hero-stat-card">
-              <strong>Layer 0</strong>
-              <span>Pre-Approval Safety Gate</span>
-            </div>
-            <div className="hero-stat-divider"></div>
-            <div className="hero-stat-card">
-              <strong>Zero</strong>
-              <span>Knowledge Decay Outages</span>
-            </div>
-          </div>
         </div>
       </section>
+
 
       {/* ── Enterprise Integrations Infinite Marquee ── */}
       <section className="landing-section integrations-marquee-section">
@@ -1024,10 +1042,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunchApp }) => {
                   <Layers size={14} />
                   <span>{showArchBlueprint ? 'Hide Architecture Diagram' : 'View Full Architecture Blueprint Diagram'}</span>
                 </button>
-                <button className="btn btn-ghost" onClick={() => onLaunchApp('intelligence')}>
-                  <span>Inspect Live Layer in Intelligence Core</span>
-                  <ArrowRight size={13} />
-                </button>
               </div>
 
               {showArchBlueprint && (
@@ -1196,11 +1210,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunchApp }) => {
                   </div>
                 </div>
               </div>
-
-              <button className="btn btn-primary" onClick={() => onLaunchApp('chat')} style={{ width: '100%', marginTop: '16px' }}>
-                <span>Deploy Axiom OS</span>
-                <ArrowRight size={14} />
-              </button>
             </div>
           </div>
         </div>
@@ -1324,13 +1333,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunchApp }) => {
             Launch Axiom OS in seconds. Connect your Slack, GitHub, and Jira streams to activate real-time self-healing intelligence.
           </p>
           <div className="cta-banner-buttons">
-            <button className="btn btn-primary btn-hero-lg" onClick={() => onLaunchApp('chat')}>
+            <button className="btn btn-primary btn-hero-lg" onClick={() => handleLaunchApp('chat')}>
               <Sparkles size={16} />
               <span>Launch AI Command Center</span>
               <ArrowRight size={16} />
-            </button>
-            <button className="btn btn-secondary btn-hero-lg" onClick={() => onLaunchApp('inbox')}>
-              <span>Open Conflict Inbox</span>
             </button>
           </div>
         </div>
@@ -1352,18 +1358,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunchApp }) => {
 
             <div className="footer-links-col">
               <strong>Core System</strong>
-              <button onClick={() => onLaunchApp('chat')}>AI Command Center</button>
-              <button onClick={() => onLaunchApp('inbox')}>Conflict Inbox</button>
-              <button onClick={() => onLaunchApp('intelligence')}>Intelligence Core</button>
-              <button onClick={() => onLaunchApp('pipeline')}>Processing Pipeline</button>
+              <span>AI Command Center</span>
+              <span>Conflict Inbox</span>
+              <span>Intelligence Core</span>
+              <span>Processing Pipeline</span>
             </div>
 
             <div className="footer-links-col">
               <strong>Governance</strong>
-              <button onClick={() => onLaunchApp('execution')}>Execution Timeline</button>
-              <button onClick={() => onLaunchApp('audit')}>Audit Logs</button>
-              <button onClick={() => onLaunchApp('settings')}>Policy Gates</button>
-              <button onClick={() => onLaunchApp('profile')}>RBAC Permissions</button>
+              <span>Execution Timeline</span>
+              <span>Audit Logs</span>
+              <span>Policy Gates</span>
+              <span>RBAC Permissions</span>
             </div>
 
             <div className="footer-links-col">

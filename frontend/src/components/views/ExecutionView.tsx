@@ -1,3 +1,4 @@
+import './ExecutionView.view.css';
 import React, { useState } from 'react';
 import {
   Workflow,
@@ -246,19 +247,26 @@ export const ExecutionView: React.FC<ExecutionViewProps> = ({ workflows, onNavig
   };
 
   return (
-    <div className="view-container anim-fade-in">
+    <div className="view-container anim-fade-in ex-view">
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexWrap: 'wrap', gap: '12px' }}>
-        <div>
-          <span className="layer-chip l0">LAYER 0 MULTI-SYSTEM DISPATCH</span>
-          <h2 style={{ fontSize: '22px', fontWeight: 800, marginTop: '4px', letterSpacing: '-0.02em' }}>
-            Automated Actions &amp; Execution Timeline
-          </h2>
-          <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px' }}>
-            Live record of synchronized documentation patches, Jira tickets, Slack broadcasts, and GitHub PRs dispatched by Axiom OS.
+      <header className="ex-header">
+        <div className="ex-header-main">
+          <div className="ex-eyebrow-row">
+            <span className="layer-chip l0">LAYER 0 MULTI-SYSTEM DISPATCH</span>
+            <span className="badge ok">
+              <span className="pulse-dot"></span>
+              Deterministic Sync Active
+            </span>
+          </div>
+          <div className="ex-dateline">
+            {new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })} · EXECUTION TIMELINE
+          </div>
+          <h1 className="ex-title">Execution Timeline</h1>
+          <p className="ex-subcopy">
+            Synchronized patches, tickets, and broadcasts dispatched across connected tools.
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div className="ex-header-actions">
           <button className="btn btn-primary" onClick={triggerManualTest}>
             <Zap size={15} />
             <span>Trigger Test Dispatch</span>
@@ -268,191 +276,172 @@ export const ExecutionView: React.FC<ExecutionViewProps> = ({ workflows, onNavig
             <ArrowRight size={14} />
           </button>
         </div>
-      </div>
+      </header>
 
       {/* ── Visual 4-Step Pipeline Bar ── */}
-      <div className="execution-pipeline-bar anim-slide-up">
-        <div className="pipeline-step-pill">
-          <div className="pipeline-step-num">01</div>
-          <div>
+      <section className="ex-pipe-bar anim-slide-up" aria-label="Dispatch pipeline">
+        <div className="ex-pipe-step">
+          <div className="ex-pipe-num">01</div>
+          <div className="ex-pipe-text">
             <strong>Ingest Stream</strong>
             <span>Slack · GitHub · Teams</span>
           </div>
         </div>
-        <span className="pipeline-arrow">➔</span>
+        <span className="ex-pipe-arrow">
+          <ArrowRight size={16} />
+        </span>
 
-        <div className="pipeline-step-pill">
-          <div className="pipeline-step-num">02</div>
-          <div>
+        <div className="ex-pipe-step">
+          <div className="ex-pipe-num">02</div>
+          <div className="ex-pipe-text">
             <strong>Cognitive Reasoning</strong>
             <span>pgvector + Neo4j Graph</span>
           </div>
         </div>
-        <span className="pipeline-arrow">➔</span>
+        <span className="ex-pipe-arrow">
+          <ArrowRight size={16} />
+        </span>
 
-        <div className="pipeline-step-pill">
-          <div className="pipeline-step-num">03</div>
-          <div>
+        <div className="ex-pipe-step">
+          <div className="ex-pipe-num">03</div>
+          <div className="ex-pipe-text">
             <strong>Layer 0 Safety Gate</strong>
             <span>Lead Signoff Cleared</span>
           </div>
         </div>
-        <span className="pipeline-arrow">➔</span>
+        <span className="ex-pipe-arrow">
+          <ArrowRight size={16} />
+        </span>
 
-        <div className="pipeline-step-pill active">
-          <div className="pipeline-step-num">04</div>
-          <div>
+        <div className="ex-pipe-step active">
+          <div className="ex-pipe-num">04</div>
+          <div className="ex-pipe-text">
             <strong>Multi-System Dispatch</strong>
             <span>100% Deterministic Sync</span>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* ── 4 Clean Executive Metric KPI Cards ── */}
-      <div className="intel-stats-grid anim-slide-up" style={{ marginTop: '16px', marginBottom: '20px' }}>
-        <div className="intel-stat-card">
-          <div className="intel-stat-head">
-            <span>Total Actions Dispatched</span>
+      {/* ── 4 Executive Metric KPI Cards ── */}
+      <section className="ex-kpi-row anim-slide-up" aria-label="Execution KPIs">
+        <div className="ex-kpi k-blue">
+          <div className="ex-kpi-head">
+            <span className="ex-kpi-label">Total Actions Dispatched</span>
             <Zap size={16} color="#60a5fa" />
           </div>
-          <div className="intel-stat-val" style={{ color: '#93c5fd' }}>
-            {actionsList.length}
-          </div>
-          <div className="intel-stat-sub">
-            Synchronized across all targets
-          </div>
+          <div className="ex-kpi-val">{actionsList.length}</div>
+          <div className="ex-kpi-sub">Synchronized across all targets</div>
         </div>
 
-        <div className="intel-stat-card">
-          <div className="intel-stat-head">
-            <span>Dispatch Latency</span>
+        <div className="ex-kpi k-green">
+          <div className="ex-kpi-head">
+            <span className="ex-kpi-label">Dispatch Latency</span>
             <Activity size={16} color="#34d399" />
           </div>
-          <div className="intel-stat-val" style={{ color: '#34d399' }}>
-            34 ms
-          </div>
-          <div className="intel-stat-sub">
-            High-throughput event bus
-          </div>
+          <div className="ex-kpi-val">34 ms</div>
+          <div className="ex-kpi-sub">High-throughput event bus</div>
         </div>
 
-        <div className="intel-stat-card">
-          <div className="intel-stat-head">
-            <span>Layer 0 Safety Compliance</span>
+        <div className="ex-kpi k-amber">
+          <div className="ex-kpi-head">
+            <span className="ex-kpi-label">Layer 0 Safety Compliance</span>
             <Shield size={16} color="#fbbf24" />
           </div>
-          <div className="intel-stat-val" style={{ color: '#fbbf24' }}>
-            100%
-          </div>
-          <div className="intel-stat-sub">
-            All policy gates cleared
-          </div>
+          <div className="ex-kpi-val">100%</div>
+          <div className="ex-kpi-sub">All policy gates cleared</div>
         </div>
 
-        <div className="intel-stat-card">
-          <div className="intel-stat-head">
-            <span>Connected Targets</span>
+        <div className="ex-kpi k-purple">
+          <div className="ex-kpi-head">
+            <span className="ex-kpi-label">Connected Targets</span>
             <CheckCircle2 size={16} color="#a78bfa" />
           </div>
-          <div className="intel-stat-val" style={{ color: '#c4b5fd' }}>
-            5
-          </div>
-          <div className="intel-stat-sub">
-            Jira · Slack · GitHub · Docs
-          </div>
+          <div className="ex-kpi-val">5</div>
+          <div className="ex-kpi-sub">Jira · Slack · GitHub · Docs</div>
         </div>
-      </div>
+      </section>
 
       {/* ── Split Master-Detail Layout ── */}
-      <div className="execution-master-grid">
+      <div className="ex-grid">
         {/* Left Column: Actions Feed */}
-        <div className="execution-feed-col">
-          {/* Target Filters */}
-          <div className="feed-filter-bar">
-            {[
-              { id: 'all', label: 'All Actions' },
-              { id: 'confluence', label: '📘 Docs' },
-              { id: 'github', label: '🐙 GitHub' },
-              { id: 'security', label: '🛡️ Security' },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                className={`btn btn-sm ${selectedFilter === tab.id ? 'btn-primary' : 'btn-ghost'}`}
-                onClick={() => setSelectedFilter(tab.id)}
-                style={{ fontSize: '11px', padding: '4px 10px' }}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="execution-actions-stack">
-            {filteredActions.map((action) => {
-              const isSelected = selectedActionId === action.id;
-              return (
-                <div
-                  key={action.id}
-                  className={`execution-card-item ${isSelected ? 'selected' : ''} anim-slide-up`}
-                  onClick={() => setSelectedActionId(action.id)}
+        <div className="ex-feed">
+          <div className="ex-feed-panel">
+            {/* Target Filters */}
+            <div className="ex-filter-rail">
+              {[
+                { id: 'all', label: 'All Actions' },
+                { id: 'confluence', label: 'Docs' },
+                { id: 'github', label: 'GitHub' },
+                { id: 'security', label: 'Security' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  className={`ex-filter ${selectedFilter === tab.id ? 'active' : ''}`}
+                  onClick={() => setSelectedFilter(tab.id)}
                 >
-                  <div className="exec-card-top">
-                    <div className="exec-tool-tag" style={{ color: getToolColor(action.tool) }}>
-                      <span>{getToolIcon(action.tool)}</span>
-                      <strong>{action.id}</strong>
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="ex-actions">
+              {filteredActions.map((action) => {
+                const isSelected = selectedActionId === action.id;
+                return (
+                  <div
+                    key={action.id}
+                    className={`ex-card ${isSelected ? 'selected' : ''} anim-slide-up`}
+                    onClick={() => setSelectedActionId(action.id)}
+                  >
+                    <div className="ex-card-top">
+                      <div className="ex-card-id" style={{ color: getToolColor(action.tool) }}>
+                        <span className="ex-tool-emoji">{getToolIcon(action.tool)}</span>
+                        <span>{action.id}</span>
+                      </div>
+                      <span className="ex-latency">{action.latency}</span>
                     </div>
-                    <span className="exec-latency-badge">⚡ {action.latency}</span>
-                  </div>
 
-                  <strong className="exec-card-title">{action.title}</strong>
-                  <p className="exec-card-desc">{action.description}</p>
+                    <strong className="ex-card-title">{action.title}</strong>
+                    <p className="ex-card-desc">{action.description}</p>
 
-                  <div className="exec-card-footer">
-                    <span className="badge ok" style={{ fontSize: '9.5px' }}>
-                      ✓ COMPLETED
-                    </span>
-                    <span className="exec-timestamp">
-                      {new Date(action.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
+                    <div className="ex-card-foot">
+                      <span className="badge ok">COMPLETED</span>
+                      <span className="ex-card-time">
+                        {new Date(action.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </div>
 
         {/* Right Column: Execution Inspector & Live Telemetry Details */}
-        <div className="execution-inspector-col">
-          <div className="inspector-card anim-slide-up">
-            <div className="inspector-header">
+        <div className="ex-inspector-col">
+          <div className="ex-inspector anim-slide-up">
+            <div className="ex-insp-head">
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span className="mono" style={{ fontSize: '13px', color: '#93c5fd', fontWeight: 700 }}>
-                    {selectedAction.id}
-                  </span>
-                  <span className="badge ok" style={{ fontSize: '10px' }}>
-                    100% DETERMINISTIC DISPATCH
-                  </span>
+                <div className="ex-insp-ids">
+                  <span className="ex-insp-id">{selectedAction.id}</span>
+                  <span className="badge ok">100% DETERMINISTIC DISPATCH</span>
                 </div>
-                <h3 style={{ fontSize: '16px', fontWeight: 800, marginTop: '4px' }}>
-                  {selectedAction.title}
-                </h3>
+                <h2 className="ex-insp-title">{selectedAction.title}</h2>
               </div>
-              <span className="inspector-latency-tag">⚡ {selectedAction.latency} Latency</span>
+              <span className="ex-insp-latency">{selectedAction.latency} Latency</span>
             </div>
 
             {/* Approver & Cryptographic Audit Ref */}
-            <div className="inspector-meta-row">
-              <div className="inspector-meta-item">
-                <span>Authorized Domain Approver</span>
-                <strong style={{ color: 'var(--text-main)' }}>{selectedAction.approver}</strong>
+            <div className="ex-meta-row">
+              <div className="ex-meta-item">
+                <span className="ex-meta-label">Authorized Domain Approver</span>
+                <strong className="ex-meta-val">{selectedAction.approver}</strong>
               </div>
-              <div className="inspector-meta-item">
-                <span>Cryptographic SHA-256 Audit Ref</span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span className="mono" style={{ color: '#38bdf8', fontSize: '11px' }}>
-                    {selectedAction.auditHash.substring(0, 18)}…
-                  </span>
-                  <button className="btn btn-ghost" onClick={handleCopyHash} style={{ padding: '2px 6px', height: 'auto' }}>
+              <div className="ex-meta-item">
+                <span className="ex-meta-label">Cryptographic SHA-256 Audit Ref</span>
+                <div className="ex-hash-row">
+                  <span className="ex-hash">{selectedAction.auditHash.substring(0, 18)}…</span>
+                  <button className="btn btn-ghost ex-copy-btn" onClick={handleCopyHash} aria-label="Copy audit hash">
                     {copied ? <Check size={11} color="#34d399" /> : <Copy size={11} />}
                   </button>
                 </div>
@@ -460,45 +449,40 @@ export const ExecutionView: React.FC<ExecutionViewProps> = ({ workflows, onNavig
             </div>
 
             {/* Diff Preview */}
-            <div className="inspector-section">
-              <span className="inspector-section-label">Synchronized Documentation Diff:</span>
-              <div className="sim-patch-box" style={{ marginTop: '6px' }}>
-                <div className="sim-diff-line line-del">{selectedAction.diffSnippet.removed}</div>
-                <div className="sim-diff-line line-add">{selectedAction.diffSnippet.added}</div>
+            <div className="ex-section">
+              <span className="ex-section-label">Synchronized Documentation Diff</span>
+              <div className="ex-diff">
+                <div className="ex-diff-line del">{selectedAction.diffSnippet.removed}</div>
+                <div className="ex-diff-line add">{selectedAction.diffSnippet.added}</div>
               </div>
             </div>
 
             {/* Target Multi-System Dispatch Matrix */}
-            <div className="inspector-section">
-              <span className="inspector-section-label">Simultaneous Downstream Dispatch Targets:</span>
-              <div className="targets-matrix-grid">
+            <div className="ex-section">
+              <span className="ex-section-label">Simultaneous Downstream Dispatch Targets</span>
+              <div className="ex-targets">
                 {selectedAction.affectedTargets.map((target, tIdx) => (
-                  <div key={tIdx} className="target-node-card">
-                    <div className="target-node-top">
-                      <CheckCircle2 size={14} color="#34d399" />
+                  <div key={tIdx} className="ex-target">
+                    <div className="ex-target-top">
+                      <CheckCircle2 size={14} />
                       <strong>{target.name}</strong>
                     </div>
-                    <span className="target-node-status">{target.status}</span>
-                    <p className="target-node-detail">{target.detail}</p>
+                    <span className="ex-target-status">{target.status}</span>
+                    <p className="ex-target-detail">{target.detail}</p>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* Live JSON Execution Telemetry */}
-            <div className="inspector-section">
-              <span className="inspector-section-label">Raw Dispatch Telemetry (JSON Payload):</span>
-              <div className="terminal-code-block" style={{ marginTop: '6px' }}>
-                <div className="code-line">
-                  <span className="code-comment">// Verified Layer 0 Execution Output Payload</span>
-                </div>
-                <div className="code-line">
-                  <span className="code-key">"status"</span>: <span className="code-val">"DISPATCH_CONFIRMED_200_OK"</span>,
-                </div>
-                <div className="code-line">
-                  <span className="code-key">"telemetry"</span>: {JSON.stringify(selectedAction.payloadJson, null, 2)}
-                </div>
-              </div>
+            <div className="ex-section">
+              <span className="ex-section-label">Raw Dispatch Telemetry (JSON Payload)</span>
+              <pre className="ex-telemetry">
+                <span className="ex-comment">{'// Verified Layer 0 Execution Output Payload\n'}</span>
+                {'"status": "DISPATCH_CONFIRMED_200_OK",\n'}
+                {'"telemetry": '}
+                {JSON.stringify(selectedAction.payloadJson, null, 2)}
+              </pre>
             </div>
           </div>
         </div>
