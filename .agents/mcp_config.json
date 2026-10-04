@@ -1,8 +1,22 @@
 {
   "mcpServers": {
     "inspo": {
-      "serverUrl": "https://inspomcp.dev/api/mcp",
-      "url": "https://inspomcp.dev/api/mcp"
+      "serverUrl": "https://inspomcp.dev/api/mcp"
+    },
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@latest"
+      ]
+    },
+    "shadcn": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "shadcn@latest",
+        "mcp"
+      ]
     }
   }
 }
