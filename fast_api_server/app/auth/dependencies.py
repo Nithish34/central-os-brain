@@ -71,6 +71,18 @@ def get_current_user(
     return user
 
 
+def get_optional_current_user(
+    token: Optional[str] = Depends(get_token_from_request),
+    db: Session = Depends(get_db),
+) -> Optional[User]:
+    if not token:
+        return None
+    try:
+        return get_current_user(token=token, db=db)
+    except HTTPException:
+        return None
+
+
 def get_tenant_repo(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),

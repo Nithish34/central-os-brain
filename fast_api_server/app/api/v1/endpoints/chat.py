@@ -2,13 +2,16 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Dict, Any
 from collections import OrderedDict
 import json
 import uuid
 from app.core.config import settings
 from app.core.database import get_db
+from app.models.organization import Organization
+from app.models.user import User
+from app.auth.dependencies import get_optional_current_user
 from app.models.conflict import Conflict
 from app.models.event import CompanyEvent
 from app.models.document import Document
@@ -35,19 +38,45 @@ _sessions: OrderedDict = OrderedDict()   # session_id → session dict
 
 def _purge_expired():
     """Remove sessions idle for more than SESSION_TTL_HRS from memory cache."""
-    cutoff = datetime.utcnow() - timedelta(hours=SESSION_TTL_HRS)
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=SESSION_TTL_HRS)
     expired = [k for k, v in _sessions.items() if v.get("last_active") and v["last_active"] < cutoff]
     for k in expired:
         del _sessions[k]
 
 
-def _get_or_create_session(db: Session, session_id: Optional[str], title: Optional[str] = None) -> tuple[str, dict]:
+def _pct(val: Any) -> int:
+    """Helper to safely calculate integer percentage from ORM columns or scalar floats."""
+    try:
+        if val is None:
+            return 0
+        return round(float(val) * 100)
+    except Exception:
+        return 0
+
+
+def _resolve_org_id(db: Session, current_user: Optional[User] = None) -> str:
+    """Resolves the organization ID from user, or falls back to first active org."""
+    if current_user and current_user.organization_id:
+        return str(current_user.organization_id)
+    org = db.query(Organization).filter(Organization.deactivated_at.is_(None)).first()
+    if org:
+        return str(org.id)
+    return "org-default"
+
+
+def _get_or_create_session(
+    db: Session,
+    session_id: Optional[str],
+    org_id: Optional[str] = None,
+    title: Optional[str] = None
+) -> tuple[str, dict]:
     """
     Return (session_id, session_dict).
     Checks in-memory LRU cache -> Checks database -> Creates new DB record if unknown.
     """
     _purge_expired()
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
+    resolved_org_id = org_id or _resolve_org_id(db)
 
     # 1. Check in-memory cache
     if session_id and session_id in _sessions:
@@ -60,9 +89,17 @@ def _get_or_create_session(db: Session, session_id: Optional[str], title: Option
 
     # 2. Check Database for existing session
     if session_id:
-        db_sess = db.query(ChatSessionModel).filter(ChatSessionModel.id == session_id).first()
+        db_sess = db.query(ChatSessionModel).filter(
+            ChatSessionModel.id == session_id,
+            ChatSessionModel.organization_id == resolved_org_id
+        ).first()
+        if not db_sess:
+            db_sess = db.query(ChatSessionModel).filter(ChatSessionModel.id == session_id).first()
+
         if db_sess:
-            db_messages = db.query(ChatMessageModel).filter(ChatMessageModel.session_id == session_id).order_by(ChatMessageModel.timestamp.asc()).all()
+            db_messages = db.query(ChatMessageModel).filter(
+                ChatMessageModel.session_id == session_id
+            ).order_by(ChatMessageModel.timestamp.asc()).all()
             history = [
                 {
                     "id": m.id,
@@ -75,14 +112,15 @@ def _get_or_create_session(db: Session, session_id: Optional[str], title: Option
                 for m in db_messages
             ]
             sess = {
-                "title": db_sess.title,
+                "title": str(db_sess.title or "Conversation"),
                 "history": history,
                 "created_at": db_sess.created_at,
                 "last_active": now,
+                "organization_id": db_sess.organization_id,
             }
-            db_sess.last_active = now
+            setattr(db_sess, "last_active", now)
             if title:
-                db_sess.title = title
+                setattr(db_sess, "title", title)
                 sess["title"] = title
             db.commit()
             _sessions[session_id] = sess
@@ -96,6 +134,7 @@ def _get_or_create_session(db: Session, session_id: Optional[str], title: Option
     new_title = title or "New Conversation"
     db_new_sess = ChatSessionModel(
         id=new_id,
+        organization_id=resolved_org_id,
         title=new_title,
         created_at=now,
         last_active=now,
@@ -109,6 +148,7 @@ def _get_or_create_session(db: Session, session_id: Optional[str], title: Option
         "history": [],
         "created_at": now,
         "last_active": now,
+        "organization_id": resolved_org_id,
     }
     _sessions[new_id] = sess
     return new_id, sess
@@ -229,7 +269,7 @@ def format_conflict_detail(c: Conflict) -> str:
         f"{icon} **{c.title}**\n\n"
         f"**Status:** {status_icon} `{c.status.upper()}` | **Risk:** `{c.risk_level}` | **Severity:** `{c.severity.upper()}`\n"
         f"**Domain:** {c.domain} | **Owner:** {c.owner}\n"
-        f"**AI Confidence:** {round((c.contradiction_score or 0) * 100)}% contradiction score | "
+        f"**AI Confidence:** {_pct(c.contradiction_score)}% contradiction score | "
         f"**Evidence Sources:** {evidence_count}\n\n"
         f"---\n\n"
         f"📄 **What the docs say (Old Claim):**\n{c.old_claim}\n\n"
@@ -261,7 +301,7 @@ def resolve_context_conflict(history: list, conflicts: list) -> Optional[Conflic
     return None
 
 
-def rule_based_chat(message: str, db: Session, history: list = None) -> str:
+def rule_based_chat(message: str, db: Session, history: Optional[list] = None) -> str:
     """
     Local rule-based intelligence engine — answers common questions from live DB data
     without needing an external LLM API key.
@@ -360,7 +400,7 @@ def rule_based_chat(message: str, db: Session, history: list = None) -> str:
             # Fall back to conversation context
             target = resolve_context_conflict(history, conflicts)
 
-        if target is None and is_action:
+        if target is None:
             return (
                 "🤔 I'm not sure which conflict you want to act on.\n\n"
                 "Try being specific, e.g.:\n"
@@ -381,7 +421,7 @@ def rule_based_chat(message: str, db: Session, history: list = None) -> str:
                     f"Approved at some point by Hackathon Demo Admin. No action needed."
                 )
             status_code, result = ActionExecutorService.apply_approval(
-                db, target.id, "approve", "Approved via Company Brain OS chatbot"
+                db, str(target.id), "approve", "Approved via Company Brain OS chatbot"
             )
             if status_code != 200:
                 return f"❌ Could not approve '{target.title}'. Error: {result.get('error', 'Unknown')}"
@@ -402,7 +442,7 @@ def rule_based_chat(message: str, db: Session, history: list = None) -> str:
             if target.status == "rejected":
                 return f"❌ **'{target.title}'** is already rejected."
             status_code, result = ActionExecutorService.apply_approval(
-                db, target.id, "reject", "Rejected via Company Brain OS chatbot"
+                db, str(target.id), "reject", "Rejected via Company Brain OS chatbot"
             )
             if status_code != 200:
                 return f"❌ Could not reject '{target.title}'. Error: {result.get('error', 'Unknown')}"
@@ -415,7 +455,7 @@ def rule_based_chat(message: str, db: Session, history: list = None) -> str:
 
         # ── Reopen ────────────────────────────────────────────────────────
         if any(k in msg for k in ["reopen", "re-open", "open again", "reset"]):
-            target.status = "open"
+            setattr(target, "status", "open")
             db.commit()
             return (
                 f"🟠 **Conflict Reopened.**\n\n"
@@ -437,7 +477,7 @@ def rule_based_chat(message: str, db: Session, history: list = None) -> str:
             if not new_owner:
                 return f"Please specify the new owner. E.g.: *'Change owner of the payment conflict to DevOps Team'*"
             old_owner = target.owner
-            target.owner = new_owner
+            setattr(target, "owner", new_owner)
             db.commit()
             return (
                 f"👤 **Owner Updated.**\n\n"
@@ -452,12 +492,12 @@ def rule_based_chat(message: str, db: Session, history: list = None) -> str:
             for sev in ["critical", "high", "medium", "low"]:
                 if sev in msg:
                     old_sev = target.severity
-                    target.severity = sev
+                    setattr(target, "severity", sev)
                     db.commit()
                     return (
                         f"⚡ **Severity Updated.**\n\n"
                         f"**'{target.title}'**\n"
-                        f"Old severity: `{old_sev.upper()}`\n"
+                        f"Old severity: `{old_sev.upper() if old_sev else ''}`\n"
                         f"New severity: `{sev.upper()}`\n"
                         f"Updated at {now_ts}"
                     )
@@ -468,7 +508,7 @@ def rule_based_chat(message: str, db: Session, history: list = None) -> str:
             for risk in ["CRITICAL", "HIGH", "MEDIUM", "LOW"]:
                 if risk.lower() in msg:
                     old_risk = target.risk_level
-                    target.risk_level = risk
+                    setattr(target, "risk_level", risk)
                     db.commit()
                     return (
                         f"🛡️ **Risk Level Updated.**\n\n"
@@ -511,14 +551,10 @@ def rule_based_chat(message: str, db: Session, history: list = None) -> str:
             if "old" in msg or "document" in msg or "original" in msg or "claim" in msg:
                 doc_date = doc.timestamp if doc else "Unknown"
                 return (
-                    f"📅 **Date of the Old Claim (Source Document)**\
-\n\n"
-                    f"The official document *'{doc.title if doc else c.document_id}'* was last written/updated on:\
-\n"
-                    f"**{doc_date}**\
-\n\n"
-                    f"📄 **Old Claim recorded:** *\"{c.old_claim}\"*\
-\n"
+                    f"📅 **Date of the Old Claim (Source Document)**\n\n"
+                    f"The official document *'{doc.title if doc else c.document_id}'* was last written/updated on:\n"
+                    f"**{doc_date}**\n\n"
+                    f"📄 **Old Claim recorded:** *\"{c.old_claim}\"*\n"
                     f"✍️ **Author:** {doc.author if doc else 'Unknown'} | **Source:** {doc.source if doc else 'N/A'}"
                 )
             if "new" in msg or "evidence" in msg or "live" in msg or "event" in msg:
@@ -527,41 +563,30 @@ def rule_based_chat(message: str, db: Session, history: list = None) -> str:
                 ev_date = newest.timestamp if newest else "Unknown"
                 ev_source = newest.source if newest else "Unknown"
                 return (
-                    f"📅 **Date of the New Claim (Live Evidence)**\
-\n\n"
-                    f"The most recent live event that contradicted the official document was received on:\
-\n"
-                    f"**{ev_date}** from **{ev_source}**\
-\n\n"
-                    f"⚡ **Content:** *\"{newest.title if newest else c.new_claim}\"*\
-\n"
-                    f"By **{newest.author if newest else 'Unknown'}** | Freshness: {round((newest.freshness_score if newest else 0)*100)}%"
+                    f"📅 **Date of the New Claim (Live Evidence)**\n\n"
+                    f"The most recent live event that contradicted the official document was received on:\n"
+                    f"**{ev_date}** from **{ev_source}**\n\n"
+                    f"⚡ **Content:** *\"{newest.title if newest else c.new_claim}\"*\n"
+                    f"By **{newest.author if newest else 'Unknown'}** | Freshness: {_pct(newest.freshness_score if newest else 0)}%"
                 )
             # Generic date — show both
             doc_date = doc.timestamp if doc else "Unknown"
             ev_ids = c.evidence_ids or []
             newest = db.query(CompanyEvent).filter(CompanyEvent.id.in_(ev_ids)).order_by(CompanyEvent.timestamp.desc()).first() if ev_ids else None
             return (
-                f"📅 **Timeline for '{c.title}'**\
-\n\n"
-                f"📄 **Official doc written:** {doc_date} (by {doc.author if doc else 'Unknown'})\
-\n"
-                f"⚡ **Live evidence received:** {newest.timestamp if newest else 'Unknown'} (from {newest.source if newest else 'N/A'})\
-\n"
+                f"📅 **Timeline for '{c.title}'**\n\n"
+                f"📄 **Official doc written:** {doc_date} (by {doc.author if doc else 'Unknown'})\n"
+                f"⚡ **Live evidence received:** {newest.timestamp if newest else 'Unknown'} (from {newest.source if newest else 'N/A'})\n"
                 f"⏱️ **Freshness delta:** `{c.freshness_delta}` — how stale the old claim was vs live evidence"
             )
 
         # Owner / who owns follow-ups
         if any(k in msg for k in ["who owns", "owner", "team", "responsible"]):
             return (
-                f"👤 **Ownership for '{c.title}'**\
-\n\n"
-                f"**Conflict Owner:** {c.owner}\
-\n"
-                f"**Document Owner:** {doc.owner if doc else 'Unknown'}\
-\n"
-                f"**Detected by Agent:** `{c.detected_by}`\
-\n"
+                f"👤 **Ownership for '{c.title}'**\n\n"
+                f"**Conflict Owner:** {c.owner}\n"
+                f"**Document Owner:** {doc.owner if doc else 'Unknown'}\n"
+                f"**Detected by Agent:** `{c.detected_by}`\n"
                 f"**Approval Matrix:** {c.approval_matrix or 'Default policy'}"
             )
 
@@ -571,29 +596,22 @@ def rule_based_chat(message: str, db: Session, history: list = None) -> str:
             evs = db.query(CompanyEvent).filter(CompanyEvent.id.in_(ev_ids)).all()
             if not evs:
                 return f"No evidence events found for '{c.title}'."
-            parts = [f"📎 **Evidence Sources for '{c.title}'** ({len(evs)} sources):\
-\n"]
+            parts = [f"📎 **Evidence Sources for '{c.title}'** ({len(evs)} sources):\n"]
             for e in evs:
-                parts.append(f"• **[{e.source}]** {e.title} by {e.author} @ {e.timestamp} (authority: {round(e.authority_score*100)}%)")
-            return "\
-".join(parts)
+                parts.append(f"• **[{e.source}]** {e.title} by {e.author} @ {e.timestamp} (authority: {_pct(e.authority_score)}%)")
+            return "\n".join(parts)
 
         # Business impact follow-ups
         if any(k in msg for k in ["business impact", "impact", "risk to", "consequence"]):
             return (
-                f"💼 **Business Impact for '{c.title}'**\
-\n\n"
-                f"{c.business_impact or 'No business impact recorded.'}\
-\n\n"
-                f"**Risk Level:** `{c.risk_level}` | **Severity:** `{(c.severity or 'unknown').upper()}`\
-\n"
+                f"💼 **Business Impact for '{c.title}'**\n\n"
+                f"{c.business_impact or 'No business impact recorded.'}\n\n"
+                f"**Risk Level:** `{c.risk_level}` | **Severity:** `{(c.severity or 'unknown').upper()}`\n"
                 f"**Owner responsible for resolution:** {c.owner}"
             )
 
         # Default: show full detail again with context note
-        return format_conflict_detail(c) + f"\
-\n---\
-\n💡 *Continuing context from previous message. Ask me about dates, evidence, ownership, or business impact.*"
+        return format_conflict_detail(c) + f"\n\n---\n💡 *Continuing context from previous message. Ask me about dates, evidence, ownership, or business impact.*"
 
     # ── PRIORITY 1: Specific Integration & Pipeline Event Lookups ──────────
     # Handles queries like "what was the latest message from slack", "github events", etc.
@@ -620,12 +638,12 @@ def rule_based_chat(message: str, db: Session, history: list = None) -> str:
         # If asking for "latest", "last", "newest", or a singular "message/event"
         if any(k in msg for k in ["latest", "last", "newest", "recent message", "what was the message", "what is the message", "what was the last"]):
             latest_ev = matched_events[0]
-            icon = {"Slack": "💬", "GitHub": "🐙", "Gmail": "✉️", "Teams": "👥", "Jira": "🎯"}.get(latest_ev.source, "📄")
+            icon = {"Slack": "💬", "GitHub": "🐙", "Gmail": "✉️", "Teams": "👥", "Jira": "🎯"}.get(str(latest_ev.source), "📄")
             return (
                 f"{icon} **Latest Message from {latest_ev.source}**\n\n"
                 f"**Channel / Title:** {latest_ev.title}\n"
                 f"**Author:** {latest_ev.author} | **Timestamp:** {latest_ev.timestamp}\n"
-                f"**Authority Score:** {round(latest_ev.authority_score * 100)}% | **Freshness:** {round(latest_ev.freshness_score * 100)}%\n\n"
+                f"**Authority Score:** {_pct(latest_ev.authority_score)}% | **Freshness:** {_pct(latest_ev.freshness_score)}%\n\n"
                 f"---\n\n"
                 f"📝 **Message Content:**\n"
                 f"> {latest_ev.content or latest_ev.title}\n\n"
@@ -638,12 +656,12 @@ def rule_based_chat(message: str, db: Session, history: list = None) -> str:
         plat_label = target_platform or "Processing Pipeline"
         parts = [f"⚙️ **{plat_label}** — {len(matched_events)} event(s) recorded:\n"]
         for e in matched_events[:10]:
-            icon = {"Slack": "💬", "GitHub": "🐙", "Gmail": "✉️", "Teams": "👥", "Jira": "🎯"}.get(e.source, "📄")
+            icon = {"Slack": "💬", "GitHub": "🐙", "Gmail": "✉️", "Teams": "👥", "Jira": "🎯"}.get(str(e.source), "📄")
             parts.append(
                 f"{icon} **[{e.source}]** {e.title}\n"
                 f"   By **{e.author}** @ {e.timestamp}\n"
-                f"   *Content:* \"{e.content[:85] + ('…' if len(e.content or '') > 85 else '')}\"\n"
-                f"   Authority: {round(e.authority_score*100)}% | Freshness: {round(e.freshness_score*100)}%\n"
+                f"   *Content:* \"{str(e.content or '')[:85] + ('…' if len(str(e.content or '')) > 85 else '')}\"\n"
+                f"   Authority: {_pct(e.authority_score)}% | Freshness: {_pct(e.freshness_score)}%\n"
             )
         return "\n".join(parts)
 
@@ -741,7 +759,7 @@ def rule_based_chat(message: str, db: Session, history: list = None) -> str:
             return "⚡ No workflows executed yet. Approve a conflict from the Conflict Inbox to trigger automated execution."
         parts = [f"⚡ **Execution Timeline** — {len(workflows)} recent actions:\n"]
         for w in workflows:
-            icon = {"Risk & Policy Engine": "🛡️", "Knowledge Base": "📘", "Jira": "🎯", "Slack": "💬", "GitHub": "🐙"}.get(w.tool, "🔧")
+            icon = {"Risk & Policy Engine": "🛡️", "Knowledge Base": "📘", "Jira": "🎯", "Slack": "💬", "GitHub": "🐙"}.get(str(w.tool), "🔧")
             parts.append(f"{icon} **{w.tool}**: {w.title} — `{w.status}` @ {w.created_at}")
         return "\n".join(parts)
 
@@ -814,13 +832,18 @@ def rule_based_chat(message: str, db: Session, history: list = None) -> str:
 
 
 @router.post("", summary="Chat with the Company Brain OS Intelligence Assistant")
-async def chat(req: ChatRequest, db: Session = Depends(get_db)):
+async def chat(
+    req: ChatRequest,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user),
+):
     """
     Stateful AI chat with deep NLP, RAG, and LLM reasoning.
     Supports Google Gemini, OpenAI GPT-4o, Anthropic Claude, and built-in Cognitive Reasoner.
     Persists conversations to database.
     """
-    session_id, sess = _get_or_create_session(db, req.session_id)
+    org_id = _resolve_org_id(db, current_user)
+    session_id, sess = _get_or_create_session(db, req.session_id, org_id=org_id)
     history = sess["history"]
 
     # Auto-generate meaningful session title from first user query if default
@@ -830,9 +853,9 @@ async def chat(req: ChatRequest, db: Session = Depends(get_db)):
         sess["title"] = new_title
         db_s = db.query(ChatSessionModel).filter(ChatSessionModel.id == session_id).first()
         if db_s:
-            db_s.title = new_title
+            setattr(db_s, "title", new_title)
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     now_iso = now.isoformat()
 
     # 1. Record & persist user message
@@ -845,6 +868,7 @@ async def chat(req: ChatRequest, db: Session = Depends(get_db)):
     
     db_user_msg = ChatMessageModel(
         id=str(uuid.uuid4()),
+        organization_id=org_id,
         session_id=session_id,
         role="user",
         text=req.message,
@@ -863,7 +887,7 @@ async def chat(req: ChatRequest, db: Session = Depends(get_db)):
     )
 
     # 3. Record & persist bot reply
-    bot_now = datetime.utcnow()
+    bot_now = datetime.now(timezone.utc)
     bot_now_iso = bot_now.isoformat()
     
     bot_msg_entry = {
@@ -877,6 +901,7 @@ async def chat(req: ChatRequest, db: Session = Depends(get_db)):
 
     db_bot_msg = ChatMessageModel(
         id=str(uuid.uuid4()),
+        organization_id=org_id,
         session_id=session_id,
         role="bot",
         text=reply,
@@ -889,8 +914,8 @@ async def chat(req: ChatRequest, db: Session = Depends(get_db)):
     # Update session metadata in DB
     db_s = db.query(ChatSessionModel).filter(ChatSessionModel.id == session_id).first()
     if db_s:
-        db_s.message_count = len(history)
-        db_s.last_active = bot_now
+        setattr(db_s, "message_count", len(history))
+        setattr(db_s, "last_active", bot_now)
     db.commit()
 
     if len(history) > MAX_MSG_PER_SESS:
@@ -909,14 +934,19 @@ async def chat(req: ChatRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/stream", summary="Real-Time Server-Sent Events (SSE) chat streaming")
-async def chat_stream_endpoint(req: ChatRequest, db: Session = Depends(get_db)):
+async def chat_stream_endpoint(
+    req: ChatRequest,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user),
+):
     """
     Real-Time SSE Streaming Chat Endpoint.
     Yields data: {"chunk": "token...", "done": false} as tokens generate.
     Yields data: {"done": true, "engine": "...", "sources": [...], "full_text": "..."} upon completion.
     Persists history to database.
     """
-    session_id, sess = _get_or_create_session(db, req.session_id)
+    org_id = _resolve_org_id(db, current_user)
+    session_id, sess = _get_or_create_session(db, req.session_id, org_id=org_id)
     history = sess["history"]
 
     # Auto-generate title if default
@@ -926,16 +956,17 @@ async def chat_stream_endpoint(req: ChatRequest, db: Session = Depends(get_db)):
         sess["title"] = new_title
         db_s = db.query(ChatSessionModel).filter(ChatSessionModel.id == session_id).first()
         if db_s:
-            db_s.title = new_title
+            setattr(db_s, "title", new_title)
             db.commit()
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     user_msg_entry = {"role": "user", "text": req.message, "timestamp": now.isoformat()}
     history.append(user_msg_entry)
 
     # Persist user message to DB
     db_user_msg = ChatMessageModel(
         id=str(uuid.uuid4()),
+        organization_id=org_id,
         session_id=session_id,
         role="user",
         text=req.message,
@@ -968,7 +999,7 @@ async def chat_stream_endpoint(req: ChatRequest, db: Session = Depends(get_db)):
                     accumulated_text = payload.get("full_text", accumulated_text)
 
                     # Persist completed response to DB
-                    bot_now = datetime.utcnow()
+                    bot_now = datetime.now(timezone.utc)
                     bot_msg_entry = {
                         "role": "bot",
                         "text": accumulated_text,
@@ -980,6 +1011,7 @@ async def chat_stream_endpoint(req: ChatRequest, db: Session = Depends(get_db)):
 
                     db_bot_msg = ChatMessageModel(
                         id=str(uuid.uuid4()),
+                        organization_id=org_id,
                         session_id=session_id,
                         role="bot",
                         text=accumulated_text,
@@ -991,8 +1023,8 @@ async def chat_stream_endpoint(req: ChatRequest, db: Session = Depends(get_db)):
 
                     db_s = db.query(ChatSessionModel).filter(ChatSessionModel.id == session_id).first()
                     if db_s:
-                        db_s.message_count = len(history)
-                        db_s.last_active = bot_now
+                        setattr(db_s, "message_count", len(history))
+                        setattr(db_s, "last_active", bot_now)
                     db.commit()
 
                     # Yield final enriched done packet with session metadata
@@ -1017,27 +1049,21 @@ async def chat_stream_endpoint(req: ChatRequest, db: Session = Depends(get_db)):
 @router.get("/models", summary="List supported NLP & LLM intelligence engines")
 def get_supported_models():
     """Returns available LLM providers and currently active configuration status."""
+    active_model = settings.LLM_MODEL or "gemini-3.1-flash-lite"
     return {
-        "active_default": settings.LLM_MODEL if settings.GEMINI_API_KEY else "cognitive-nlp-engine",
+        "active_default": active_model if settings.GEMINI_API_KEY else "cognitive-nlp-engine",
         "has_gemini_key": bool(settings.GEMINI_API_KEY),
         "models": [
             {
-                "id": "gemini-2.5-flash",
-                "name": "Google Gemini 2.5 Flash (Active)",
+                "id": "gemini-3.1-flash-lite",
+                "name": "Google Gemini 3.1 Flash Lite (Active)",
                 "provider": "gemini",
                 "status": "ready" if settings.GEMINI_API_KEY else "needs_key",
-                "description": "High-performance multimodal reasoning with real-time enterprise grounding."
-            },
-            {
-                "id": "gemini-2.5-pro",
-                "name": "Google Gemini 2.5 Pro",
-                "provider": "gemini",
-                "status": "ready" if settings.GEMINI_API_KEY else "needs_key",
-                "description": "Advanced analytical and multi-step causal reasoning."
+                "description": "High-efficiency real-time multimodal reasoning with enterprise state grounding."
             },
             {
                 "id": "cognitive",
-                "name": "Cognitive NLP Reasoner (Built-in / Zero-Key)",
+                "name": "Universal Zero-Key Offline Reasoner (Built-in Fallback)",
                 "provider": "builtin",
                 "status": "ready",
                 "description": "Full semantic parsing, causal analysis, comparisons, and action orchestration without external APIs."
@@ -1049,10 +1075,15 @@ def get_supported_models():
 
 
 @router.post("/sessions/new", summary="Create a new conversation session")
-def create_new_session(req: Optional[CreateSessionRequest] = None, db: Session = Depends(get_db)):
+def create_new_session(
+    req: Optional[CreateSessionRequest] = None,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user),
+):
     """Starts a clean, new conversation session and returns its ID and metadata."""
+    org_id = _resolve_org_id(db, current_user)
     title = req.title if req and req.title else "New Conversation"
-    session_id, sess = _get_or_create_session(db, None, title=title)
+    session_id, sess = _get_or_create_session(db, None, org_id=org_id, title=title)
     return {
         "session_id": session_id,
         "title": sess["title"],
@@ -1064,17 +1095,25 @@ def create_new_session(req: Optional[CreateSessionRequest] = None, db: Session =
 
 
 @router.get("/sessions", summary="List all saved conversation sessions")
-def list_sessions(db: Session = Depends(get_db)):
+def list_sessions(
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user),
+):
     """Returns all active/saved conversations with previews and timestamps from DB."""
     _purge_expired()
+    org_id = _resolve_org_id(db, current_user)
     
     # Query all non-archived sessions from DB
-    db_sessions = db.query(ChatSessionModel).filter(ChatSessionModel.is_archived == False).order_by(ChatSessionModel.last_active.desc()).all()
+    db_sessions = db.query(ChatSessionModel).filter(
+        ChatSessionModel.organization_id == org_id,
+        ChatSessionModel.is_archived == False
+    ).order_by(ChatSessionModel.last_active.desc()).all()
     
     sessions_list = []
     for s in db_sessions:
         last_msg = db.query(ChatMessageModel).filter(ChatMessageModel.session_id == s.id).order_by(ChatMessageModel.timestamp.desc()).first()
-        preview_text = (last_msg.text[:75] + "…") if last_msg and len(last_msg.text) > 75 else (last_msg.text if last_msg else "")
+        raw_text = str(last_msg.text) if last_msg and last_msg.text else ""
+        preview_text = (raw_text[:75] + "…") if len(raw_text) > 75 else raw_text
         
         sessions_list.append({
             "session_id": s.id,
@@ -1092,9 +1131,14 @@ def list_sessions(db: Session = Depends(get_db)):
 
 
 @router.get("/session/{session_id}", summary="Get full conversation history for a session")
-def get_session(session_id: str, db: Session = Depends(get_db)):
+def get_session(
+    session_id: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user),
+):
     """Returns the full message history for a chat session from DB."""
-    session_id, sess = _get_or_create_session(db, session_id)
+    org_id = _resolve_org_id(db, current_user)
+    session_id, sess = _get_or_create_session(db, session_id, org_id=org_id)
     return {
         "session_id": session_id,
         "title": sess.get("title", "Conversation"),
@@ -1113,7 +1157,7 @@ def rename_session(session_id: str, req: RenameSessionRequest, db: Session = Dep
         raise HTTPException(status_code=404, detail="Session not found.")
     
     clean_title = req.title.strip()
-    db_s.title = clean_title
+    setattr(db_s, "title", clean_title)
     db.commit()
 
     if session_id in _sessions:

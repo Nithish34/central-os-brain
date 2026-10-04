@@ -74,10 +74,17 @@ class Settings(BaseSettings):
     MICROSOFT_CLIENT_SECRET: Optional[str] = None
     MICROSOFT_TENANT_ID: str = "common"
 
+    # Public Base URLs for Webhooks & OAuth (HTTPS / ngrok)
+    PUBLIC_API_URL: Optional[str] = None
+    BACKEND_URL: Optional[str] = None
+    FRONTEND_URL: Optional[str] = None
+
     # Connectors & Webhook Signing Secrets
     SLACK_CLIENT_ID: Optional[str] = None
     SLACK_CLIENT_SECRET: Optional[str] = None
+    SLACK_REDIRECT_URI: Optional[str] = None
     SLACK_SIGNING_SECRET: Optional[str] = "slack_demo_secret_2026"
+    SLACK_WEBHOOK_URL: Optional[str] = None
     GITHUB_CLIENT_ID: Optional[str] = None
     GITHUB_CLIENT_SECRET: Optional[str] = None
     GITHUB_WEBHOOK_SECRET: Optional[str] = "github_demo_secret_2026"
@@ -86,7 +93,7 @@ class Settings(BaseSettings):
 
     # LLM and Legacy Optional Keys
     GEMINI_API_KEY: Optional[str] = None
-    LLM_MODEL: str = "gemini-2.5-flash"
+    LLM_MODEL: str = "gemini-3.1-flash-lite"
     EMBEDDING_MODEL: str = "text-embedding-3-small"
 
     @field_validator("DATABASE_URL", mode="before")

@@ -36,7 +36,7 @@ interface AppShellProps {
 /**
  * Roles that can access the System / Engine Room nav group.
  */
-const SYSTEM_ROLES = new Set(['admin', 'engineer', 'compliance', 'devops']);
+const SYSTEM_ROLES = new Set(['owner', 'admin', 'manager', 'engineer', 'compliance', 'devops']);
 
 function hasSystemAccess(user: UserProfile | null | undefined): boolean {
   if (!user) return false;
@@ -232,15 +232,16 @@ export const AppShell: React.FC<AppShellProps> = ({
         {/* Nav */}
         <div className="sidebar-nav-section">
           {/* Top Search Button */}
+          {/* Top Search Button */}
           <button
             className="sidebar-search-btn"
             onClick={() => setIsCommandPaletteOpen(true)}
             title="Global search across all documents and systems (⌘K)"
           >
-            <span className="sidebar-search-left">
-              <Search size={14} />
-              <span>Search</span>
+            <span className="sidebar-search-icon">
+              <Search size={15} />
             </span>
+            <span className="sidebar-search-label">Search</span>
             <kbd className="sidebar-search-kbd">⌘K</kbd>
           </button>
 
@@ -266,7 +267,7 @@ export const AppShell: React.FC<AppShellProps> = ({
 
           {/* ── Settings & Help Subgroup ── */}
           <div className="sidebar-subgroup">
-            <span className="nav-group-label" style={{ padding: '4px 6px' }}>Settings & Help</span>
+            <span className="nav-group-label">Settings & Help</span>
             {secondaryItems.map((item) => (
               <button
                 key={item.id}
@@ -284,13 +285,13 @@ export const AppShell: React.FC<AppShellProps> = ({
 
           {/* ── System group (role-gated) ── */}
           {canSeeSystem && (
-            <div className="sidebar-system-group" style={{ marginTop: '8px' }}>
+            <div className="sidebar-system-group">
               <button
                 className="sidebar-system-toggle"
                 onClick={() => setSystemGroupOpen((prev) => !prev)}
                 aria-expanded={systemGroupOpen}
               >
-                <span className="nav-group-label" style={{ margin: 0 }}>System / Advanced</span>
+                <span className="nav-group-label">System / Advanced</span>
                 {systemGroupOpen
                   ? <ChevronDown size={12} className="sidebar-toggle-chevron" />
                   : <ChevronRight size={12} className="sidebar-toggle-chevron" />
@@ -370,10 +371,15 @@ export const AppShell: React.FC<AppShellProps> = ({
               <span
                 className="badge"
                 style={{
-                  fontSize: '9.5px',
+                  fontSize: '9px',
+                  fontWeight: 600,
+                  padding: '2px 6px',
+                  borderRadius: '4px',
                   background: currentUser?.role === 'admin' ? 'rgba(16,185,129,0.1)' : 'rgba(59,130,246,0.1)',
                   color: currentUser?.role === 'admin' ? '#34d399' : '#60a5fa',
                   textTransform: 'uppercase',
+                  flexShrink: 0,
+                  whiteSpace: 'nowrap',
                 }}
               >
                 {currentUser.role}

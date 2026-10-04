@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.core.database import get_db
+from app.core.caching import cache_manager
 from app.models.document import Document, DocumentChunk
 from app.models.event import CompanyEvent
 from app.models.conflict import Conflict
@@ -11,6 +12,11 @@ router = APIRouter()
 
 @router.get("", summary="Layer 1 Data Foundation services telemetry")
 def get_data_foundation(db: Session = Depends(get_db)):
+    cache_key = "cb:cache:global:data_foundation:all"
+    cached = cache_manager.get(cache_key)
+    if cached is not None:
+        return cached
+
     docs_count = db.query(Document).count()
     events_count = db.query(CompanyEvent).count()
     conflicts_count = db.query(Conflict).count()
@@ -20,7 +26,7 @@ def get_data_foundation(db: Session = Depends(get_db)):
     nodes = docs_count + events_count
     edges = conflicts_count * 2 + events_count
 
-    return {
+    result = {
         "postgresql": {
             "status": "active",
             "host": "localhost:5432",
@@ -58,3 +64,6 @@ def get_data_foundation(db: Session = Depends(get_db)):
             "description": "Object storage — raw documents and files",
         },
     }
+
+    cache_manager.set(cache_key, result, ttl=30)
+    return result

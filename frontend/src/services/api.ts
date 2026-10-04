@@ -135,7 +135,14 @@ export const apiService = {
     return request<IntegrationConnector[]>('/api/v1/integrations');
   },
 
+  async getSlackStatus(): Promise<{ is_connected: boolean; is_active: boolean; connection_id?: string; slack_team_id?: string; slack_user_id?: string; last_polled_at?: string; created_at?: string }> {
+    return request<{ is_connected: boolean; is_active: boolean; connection_id?: string; slack_team_id?: string; slack_user_id?: string; last_polled_at?: string; created_at?: string }>('/api/slack/status');
+  },
+
   async getAuthorizeUrl(provider: string): Promise<{ authorization_url: string; state: string }> {
+    if (provider.toLowerCase() === 'slack') {
+      return request<{ authorization_url: string; state: string }>('/api/slack/connect');
+    }
     return request<{ authorization_url: string; state: string }>(`/api/v1/integrations/${provider}/authorize`);
   },
 
@@ -325,9 +332,14 @@ export const apiService = {
       if (authToken) {
         headers['Authorization'] = `Bearer ${authToken}`;
       }
+      const csrfToken = getCookie('cb_csrf_token') || localStorage.getItem('cb_csrf_token');
+      if (csrfToken) {
+        headers['X-CSRF-Token'] = csrfToken;
+      }
 
       let res = await fetch('/api/v1/chat/stream', {
         method: 'POST',
+        credentials: 'include',
         headers,
         body: JSON.stringify(payload),
       });

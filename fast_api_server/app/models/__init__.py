@@ -12,6 +12,7 @@ from app.models.canonical_event import CanonicalEventModel
 from app.models.event_outbox import EventOutbox
 from app.models.event_processing import EventProcessingState
 from app.models.event_dead_letter import EventDeadLetter
+from app.models.slack_connection import SlackConnection
 
 __all__ = [
     "Organization",
@@ -33,4 +34,5 @@ __all__ = [
     "EventOutbox",
     "EventProcessingState",
     "EventDeadLetter",
+    "SlackConnection",
 ]

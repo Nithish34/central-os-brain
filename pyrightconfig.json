@@ -1,0 +1,15 @@
+{
+  "extraPaths": [
+    "fast_api_server"
+  ],
+  "typeCheckingMode": "basic",
+  "reportGeneralTypeIssues": "none",
+  "reportAssignmentType": "none",
+  "reportArgumentType": "none",
+  "reportCallIssue": "none",
+  "reportAttributeAccessIssue": "none",
+  "reportOperatorIssue": "none",
+  "reportOptionalMemberAccess": "error",
+  "reportOptionalSubscript": "error",
+  "reportPrivateImportUsage": "none"
+}

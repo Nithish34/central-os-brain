@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   RefreshCw, Zap, Lock, Copy, Check, Send, X, Sliders,
   Activity, ChevronRight, Shield, ArrowUpRight, Wifi, WifiOff, Clock,
@@ -86,7 +86,7 @@ const BRAND: Record<string, { from: string; to: string; glow: string; bg: string
 };
 
 const SCOPES: Record<string, string[]> = {
-  slack:  ['channels:history', 'groups:history', 'chat:write', 'users:read', 'app_mentions:read'],
+  slack:  ['channels:history', 'channels:read', 'chat:write', 'groups:history', 'groups:read', 'im:history', 'mpim:history', 'users:read'],
   github: ['repo', 'read:org', 'pull_requests:read', 'issues:read'],
   notion: ['read_content', 'read_user', 'read_comments'],
   jira:   ['read:jira-work', 'read:jira-user', 'write:jira-work'],
@@ -108,7 +108,7 @@ const ActivityBars: React.FC<{ color: string }> = ({ color }) => {
 
 export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ integrations, onRefreshAll }) => {
   const [syncingProvider, setSyncingProvider] = useState<string | null>(null);
-  const [selectedConnector, setSelectedConnector] = useState<IntegrationConnector | null>(null);
+  const [connectingProvider, setConnectingProvider] = useState<string | null>(null);
   const [showWebhookGuide, setShowWebhookGuide] = useState(false);
   const [showSimulator, setShowSimulator] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -121,13 +121,37 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ integrations
   const [simAuthor, setSimAuthor] = useState('sarah.eng@companybrain.local');
   const [isSimulating, setIsSimulating] = useState(false);
 
-  const [tokenInput, setTokenInput] = useState('');
-  const [accountNameInput, setAccountNameInput] = useState('');
-  const [activeConnectTab, setActiveConnectTab] = useState<'oauth' | 'token'>('oauth');
-  const [isConnecting, setIsConnecting] = useState(false);
+  // Auto-refresh integration statuses and verify Slack connection on mount / callback navigation
+  useEffect(() => {
+    let isMounted = true;
+    const checkStatusAndRefresh = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const isConnectedSlack = urlParams.get('connected') === 'slack';
+      const isConnectionsHash = window.location.hash.includes('connections');
+
+      if (isConnectedSlack || isConnectionsHash) {
+        try {
+          const slackStatus = await apiService.getSlackStatus();
+          if (isMounted && slackStatus && slackStatus.is_connected && isConnectedSlack) {
+            showToast('Slack workspace connected successfully!', 'success');
+          }
+        } catch {
+          // Ignore offline/unauthenticated error
+        }
+        if (isMounted && onRefreshAll) {
+          onRefreshAll();
+        }
+      }
+    };
+
+    checkStatusAndRefresh();
+    return () => {
+      isMounted = false;
+    };
+  }, [onRefreshAll, showToast]);
 
   const handleOAuthConnect = async (provider: string) => {
-    setIsConnecting(true);
+    setConnectingProvider(provider);
     try {
       if (!getAuthToken()) {
         try {
@@ -138,7 +162,7 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ integrations
       }
       const res = await apiService.getAuthorizeUrl(provider);
       if (res && res.authorization_url) {
-        showToast(`Redirecting to ${provider.toUpperCase()} OAuth consent screen...`, 'info');
+        showToast(`Redirecting to ${provider.toUpperCase()} authorization screen for access permissions...`, 'info');
         window.location.href = res.authorization_url;
       } else {
         showToast('Could not retrieve authorization URL', 'error');
@@ -150,37 +174,7 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ integrations
         showToast(`OAuth Error: ${err.message || 'Make sure backend is running and OAuth keys are set in .env'}`, 'error');
       }
     } finally {
-      setIsConnecting(false);
-    }
-  };
-
-  const handleDirectConnect = async (provider: string) => {
-    if (!tokenInput.trim()) {
-      showToast('Please enter an Access Token or API Key', 'error');
-      return;
-    }
-    setIsConnecting(true);
-    try {
-      if (!getAuthToken()) {
-        try {
-          await apiService.login('admin@companybrain.local', 'admin1234');
-        } catch {
-          // continue
-        }
-      }
-      await apiService.connectIntegration(provider, {
-        access_token: tokenInput.trim(),
-        account_name: accountNameInput.trim() || `${provider}-workspace`,
-      });
-      showToast(`Successfully connected ${provider.toUpperCase()}! Sync started.`, 'success');
-      setSelectedConnector(null);
-      setTokenInput('');
-      setAccountNameInput('');
-      onRefreshAll();
-    } catch (err: any) {
-      showToast(`Connection failed: ${err.message}`, 'error');
-    } finally {
-      setIsConnecting(false);
+      setConnectingProvider(null);
     }
   };
 
@@ -188,7 +182,6 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ integrations
     try {
       await apiService.disconnectIntegration(provider);
       showToast(`Disconnected ${name}`, 'info');
-      setSelectedConnector(null);
       onRefreshAll();
     } catch (err: any) {
       showToast(`Disconnect failed: ${err.message}`, 'error');
@@ -291,6 +284,7 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ integrations
           const Logo = BrandLogos[conn.provider];
           const brand = BRAND[conn.provider] || BRAND.github;
           const isSyncing = syncingProvider === conn.provider;
+          const isConnectingThis = connectingProvider === conn.provider;
           const isConnected = conn.status === 'connected';
           return (
             <article key={conn.provider} className={`intg-card ${isConnected ? 'is-connected' : 'is-disconnected'}`}
@@ -303,7 +297,7 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ integrations
                   </div>
                   <div className="intg-identity-text">
                     <h3 className="intg-name">{conn.name}</h3>
-                    <p className="intg-account">{conn.account_name || 'Production Workspace'}</p>
+                    <p className="intg-account">{conn.account_name || (isConnected ? 'Connected Workspace' : 'Disconnected')}</p>
                   </div>
                 </div>
                 <div className={`intg-status-badge ${isConnected ? 'is-ok' : 'is-warn'}`}>
@@ -332,14 +326,35 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ integrations
                 </div>
               </div>
               <div className="intg-card-actions">
-                <button className="btn btn-ghost intg-sync-btn" onClick={() => handleSync(conn.provider)} disabled={isSyncing}>
-                  <RefreshCw size={13} className={isSyncing ? 'anim-spin' : ''} />
-                  <span>{isSyncing ? 'Syncing...' : 'Sync Now'}</span>
-                </button>
-                <button className="btn btn-ghost" onClick={() => setSelectedConnector(conn)}>
-                  <Sliders size={13} /><span>Configure</span>
-                </button>
-                <button className="intg-arrow-btn" onClick={() => setSelectedConnector(conn)}><ChevronRight size={14} /></button>
+                {isConnected ? (
+                  <>
+                    <button className="btn btn-ghost intg-sync-btn" onClick={() => handleSync(conn.provider)} disabled={isSyncing}>
+                      <RefreshCw size={13} className={isSyncing ? 'anim-spin' : ''} />
+                      <span>{isSyncing ? 'Syncing...' : 'Sync Now'}</span>
+                    </button>
+                    <button className="btn btn-ghost intg-disconnect-btn" onClick={() => handleDisconnect(conn.provider, conn.name)}>
+                      <span>Disconnect</span>
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    className="btn btn-primary intg-connect-btn"
+                    onClick={() => handleOAuthConnect(conn.provider)}
+                    disabled={isConnectingThis}
+                  >
+                    {isConnectingThis ? (
+                      <>
+                        <RefreshCw size={13} className="anim-spin" />
+                        <span>Connecting...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Lock size={13} />
+                        <span>Connect</span>
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
             </article>
           );
@@ -446,154 +461,6 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ integrations
           </div>
         </div>
       )}
-
-      {selectedConnector && (() => {
-        const Logo = BrandLogos[selectedConnector.provider];
-        const brand = BRAND[selectedConnector.provider] || BRAND.github;
-        const connScopes = SCOPES[selectedConnector.provider] || [];
-        const isConnected = selectedConnector.status === 'connected';
-
-        return (
-          <div className="intg-overlay is-drawer" onClick={() => setSelectedConnector(null)}>
-            <div className="intg-drawer" onClick={(e) => e.stopPropagation()}>
-              <div className="intg-drawer-head">
-                <div className="intg-drawer-identity">
-                  <div className="intg-logo-wrap" style={{ background: brand.bg, borderColor: brand.glow, width: 46, height: 46 }}>
-                    {Logo ? <Logo size={26} /> : <span style={{ fontSize: 22 }}>{selectedConnector.icon}</span>}
-                  </div>
-                  <div>
-                    <span className="intg-drawer-eyebrow">Connector Setup &amp; Settings</span>
-                    <h2 className="intg-drawer-title">{selectedConnector.name}</h2>
-                    <p className="intg-account" style={{ marginTop: 2 }}>{selectedConnector.account_name || 'Not configured'}</p>
-                  </div>
-                </div>
-                <button className="btn btn-ghost intg-modal-close" onClick={() => setSelectedConnector(null)}><X size={18} /></button>
-              </div>
-              <div className="intg-drawer-body">
-                <div className="intg-drawer-card">
-                  <span className="intg-drawer-card-title">Connection Status</span>
-                  <div className="intg-drawer-status">
-                    <span className={`badge ${isConnected ? 'ok' : 'warn'}`}>
-                      <span className="intg-pulse-dot" />
-                      {isConnected ? 'ACTIVE & VERIFIED' : 'DISCONNECTED'}
-                    </span>
-                    <span>{isConnected ? 'Real-time sync active' : 'Connect below to enable live data flow'}</span>
-                  </div>
-                </div>
-
-                <div className="intg-drawer-card">
-                  <span className="intg-drawer-card-title">Connect Methods</span>
-                  <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-                    <button
-                      className={`btn btn-sm ${activeConnectTab === 'oauth' ? 'btn-primary' : 'btn-ghost'}`}
-                      style={{ flex: 1 }}
-                      onClick={() => setActiveConnectTab('oauth')}
-                    >
-                      <Lock size={12} style={{ marginRight: 4 }} /> OAuth 2.0
-                    </button>
-                    <button
-                      className={`btn btn-sm ${activeConnectTab === 'token' ? 'btn-primary' : 'btn-ghost'}`}
-                      style={{ flex: 1 }}
-                      onClick={() => setActiveConnectTab('token')}
-                    >
-                      <Zap size={12} style={{ marginRight: 4 }} /> Direct Token / PAT
-                    </button>
-                  </div>
-
-                  {activeConnectTab === 'oauth' ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      <p style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary, #94a3b8)', margin: 0, lineHeight: 1.4 }}>
-                        Authorize directly through {selectedConnector.name}'s official consent screen. Requires registered OAuth app credentials in backend <code>.env</code>.
-                      </p>
-                      <div style={{ padding: '8px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 6, border: '1px solid rgba(255,255,255,0.07)', fontSize: '0.75rem', color: '#94a3b8' }}>
-                        Callback URI: <code style={{ color: '#38bdf8' }}>http://localhost:8000/api/v1/integrations/{selectedConnector.provider}/callback</code>
-                      </div>
-                      <button
-                        className="btn btn-primary"
-                        style={{ marginTop: 4, width: '100%', justifyContent: 'center' }}
-                        onClick={() => handleOAuthConnect(selectedConnector.provider)}
-                        disabled={isConnecting}
-                      >
-                        {isConnecting ? <RefreshCw size={14} className="anim-spin" /> : <Lock size={14} />}
-                        <span>Connect via {selectedConnector.provider === 'github' ? 'GitHub OAuth' : selectedConnector.provider === 'slack' ? 'Slack OAuth' : 'OAuth 2.0'}</span>
-                      </button>
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      <p style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary, #94a3b8)', margin: 0, lineHeight: 1.4 }}>
-                        Instant real-time connection using a Personal Access Token (GitHub: <code>ghp_...</code>) or Bot Token (Slack: <code>xoxb-...</code>).
-                      </p>
-                      <div>
-                        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8', marginBottom: 4 }}>
-                          {selectedConnector.provider === 'github' ? 'GitHub Personal Access Token (PAT)' : selectedConnector.provider === 'slack' ? 'Slack Bot Token (xoxb-...)' : 'API Access Token'}
-                        </label>
-                        <input
-                          type="password"
-                          placeholder={selectedConnector.provider === 'github' ? 'ghp_xxxxxxxxxxxx' : selectedConnector.provider === 'slack' ? 'xoxb-xxxxxxxxxxxx' : 'token_xxxxxxxxxxxx'}
-                          value={tokenInput}
-                          onChange={(e) => setTokenInput(e.target.value)}
-                          style={{ width: '100%', padding: '8px 12px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: '0.85rem' }}
-                        />
-                      </div>
-                      <div>
-                        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8', marginBottom: 4 }}>Workspace / Org Name (Optional)</label>
-                        <input
-                          type="text"
-                          placeholder={selectedConnector.provider === 'github' ? 'octocat-org' : 'my-slack-team'}
-                          value={accountNameInput}
-                          onChange={(e) => setAccountNameInput(e.target.value)}
-                          style={{ width: '100%', padding: '8px 12px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: '0.85rem' }}
-                        />
-                      </div>
-                      <button
-                        className="btn btn-primary"
-                        style={{ marginTop: 4, width: '100%', justifyContent: 'center' }}
-                        onClick={() => handleDirectConnect(selectedConnector.provider)}
-                        disabled={isConnecting}
-                      >
-                        {isConnecting ? <RefreshCw size={14} className="anim-spin" /> : <Zap size={14} />}
-                        <span>Connect Token &amp; Sync</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                <div className="intg-drawer-card">
-                  <span className="intg-drawer-card-title">Webhook Endpoint</span>
-                  <div className="intg-endpoint-row">
-                    <code className="intg-drawer-endpoint">{selectedConnector.webhook_endpoint}</code>
-                    <button className="btn btn-ghost intg-copy-btn" onClick={() => handleCopy(selectedConnector.webhook_endpoint, 'endpoint')}>
-                      {copiedKey === 'endpoint' ? <Check size={12} /> : <Copy size={12} />}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="intg-drawer-card">
-                  <span className="intg-drawer-card-title">Granted Scopes</span>
-                  <div className="intg-scopes">
-                    {connScopes.map((s) => <span key={s} className="layer-chip l2">{s}</span>)}
-                  </div>
-                </div>
-              </div>
-
-              <div className="intg-drawer-foot">
-                {isConnected ? (
-                  <>
-                    <button className="btn btn-danger" onClick={() => handleDisconnect(selectedConnector.provider, selectedConnector.name)}>
-                      Disconnect
-                    </button>
-                    <button className="btn btn-ghost" onClick={() => handleSync(selectedConnector.provider)}>
-                      <RefreshCw size={13} /> Sync Now
-                    </button>
-                  </>
-                ) : (
-                  <button className="btn btn-ghost" onClick={() => setSelectedConnector(null)}>Close</button>
-                )}
-              </div>
-            </div>
-          </div>
-        );
-      })()}
     </div>
   );
 };

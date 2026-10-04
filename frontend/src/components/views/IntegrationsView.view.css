@@ -1,4 +1,4 @@
-﻿/* ─────────────────────────────────────────────
+/* ─────────────────────────────────────────────
    Integrations View — Premium Redesign
    ───────────────────────────────────────────── */
 
@@ -293,29 +293,29 @@
 /* ── Card Actions ── */
 .intg-card-actions {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   margin-top: auto;
 }
-.intg-sync-btn { flex: 1; font-size: 12px; padding: 7px 10px; }
-.intg-card-actions .btn.btn-ghost { font-size: 12px; padding: 7px 10px; }
-
-.intg-arrow-btn {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: var(--bg-inset);
-  color: var(--text-dim);
-  cursor: pointer;
-  transition: all 0.15s;
-  flex-shrink: 0;
+.intg-sync-btn { flex: 1; font-size: 12px; padding: 8px 12px; }
+.intg-disconnect-btn {
+  font-size: 12px;
+  padding: 8px 12px;
+  color: var(--status-error, #f43f5e);
+  border-color: rgba(244, 63, 94, 0.2);
 }
-.intg-arrow-btn:hover {
-  border-color: var(--brand-light);
-  color: var(--brand-light);
-  background: rgba(var(--brand-light-rgb), 0.08);
+.intg-disconnect-btn:hover {
+  background: rgba(244, 63, 94, 0.12);
+  border-color: rgba(244, 63, 94, 0.4);
+  color: #fb7185;
+}
+.intg-connect-btn {
+  width: 100%;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8.5px 14px;
+  gap: 7px;
+  letter-spacing: 0.01em;
 }
 
 /* ── Modal shell ── */

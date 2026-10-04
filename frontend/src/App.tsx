@@ -61,10 +61,18 @@ export const AppContent: React.FC = () => {
     const state = urlParams.get('state');
     const error = urlParams.get('error');
     const errorDesc = urlParams.get('error_description');
+    const connected = urlParams.get('connected');
 
     if (error) {
       console.error('OAuth error from provider:', error, errorDesc);
       window.history.replaceState({}, document.title, window.location.pathname + '#auth');
+      return;
+    }
+
+    if (connected === 'slack' || connected) {
+      refreshAll();
+      window.history.replaceState({}, document.title, window.location.pathname + '#connections');
+      handleNavigate('connections');
       return;
     }
 

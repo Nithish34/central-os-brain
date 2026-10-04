@@ -152,13 +152,17 @@ def create_oauth_state(organization_id: str, provider: str, ttl_seconds: int = 6
 def verify_oauth_state(state: str, expected_provider: str) -> Optional[str]:
     """
     Validates state and returns the organization_id if valid, None otherwise.
-    Consumes state upon validation to prevent replay attacks.
+    Applies a 60s grace-period TTL upon validation to prevent race conditions while protecting against replay attacks.
     """
-    key = f"oauth_state:{state}"
+    if not state:
+        return None
+    cleaned_state = state.strip()
+    key = f"oauth_state:{cleaned_state}"
     payload = redis_client.get(key)
     if not payload:
         return None
-    redis_client.delete(key)
+    # Use 60s grace period rather than immediate deletion to tolerate duplicate GET prefetch
+    redis_client.set_with_ttl(key, payload, ttl_seconds=60)
     try:
         org_id, prov, _ = payload.split(":", 2)
         if prov != expected_provider:

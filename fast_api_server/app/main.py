@@ -2,6 +2,7 @@ from pathlib import Path
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
@@ -11,6 +12,9 @@ from app.core.middleware import (
     SecurityHeadersMiddleware,
     CSRFMiddleware,
     RateLimitMiddleware,
+    ETagMiddleware,
+    CacheControlMiddleware,
+    ServerTimingMiddleware,
 )
 from app.api.v1.router import api_router
 from app.api.v1.endpoints.demo import reset_and_seed_db
@@ -29,6 +33,7 @@ async def lifespan(app: FastAPI):
         from app.models.organization import Organization
         from app.models.user import User, UserRole
         from app.core.security import hash_password
+        from sqlalchemy.exc import IntegrityError
 
         # Ensure default organization exists
         default_org = db.query(Organization).filter(Organization.slug == "default").first()
@@ -43,8 +48,12 @@ async def lifespan(app: FastAPI):
             db.add(default_org)
             db.flush()
 
-        # Ensure bootstrap admin exists
-        admin = db.query(User).filter(User.email == settings.ADMIN_BOOTSTRAP_EMAIL).first()
+        # Ensure bootstrap admin exists — check both by email and fixed ID
+        # to guard against partial test states where the ID exists but email differs.
+        admin = (
+            db.query(User).filter(User.email == settings.ADMIN_BOOTSTRAP_EMAIL).first()
+            or db.query(User).filter(User.id == "usr-admin-bootstrap").first()
+        )
         if not admin:
             admin = User(
                 id="usr-admin-bootstrap",
@@ -58,10 +67,15 @@ async def lifespan(app: FastAPI):
             )
             db.add(admin)
 
-        db.commit()
+        try:
+            db.commit()
+        except IntegrityError:
+            # Bootstrap record already exists (e.g. during test runs against
+            # the real PostgreSQL DB where a previous seed left a conflicting PK).
+            db.rollback()
 
         from app.models.document import Document
-        if db.query(Document).filter(Document.organization_id == default_org.id).count() == 0:
+        if default_org and db.query(Document).filter(Document.organization_id == default_org.id).count() == 0:
             reset_and_seed_db(db)
     finally:
         db.close()
@@ -78,7 +92,15 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Custom Middlewares
+# Performance & Network Caching Middlewares
+# NOTE: Starlette processes middlewares in reverse registration order,
+# so ServerTiming must be outermost (registered last / executed first).
+app.add_middleware(ServerTimingMiddleware)   # outermost — measures total time
+app.add_middleware(ETagMiddleware)           # conditional 304 short-circuit
+app.add_middleware(CacheControlMiddleware)   # inject Cache-Control headers
+app.add_middleware(GZipMiddleware, minimum_size=500)  # compress responses >500 B
+
+# Security Middlewares
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(CSRFMiddleware)
 app.add_middleware(RateLimitMiddleware)
@@ -87,6 +109,7 @@ app.add_middleware(RateLimitMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ALLOWED_ORIGINS if isinstance(settings.CORS_ALLOWED_ORIGINS, list) else ["*"],
+    allow_origin_regex=r"^https?://.*\.ngrok-free\.dev|^https?://.*\.ngrok-free\.app|^https?://.*\.ngrok\.io|^https?://.*\.ngrok\.app|^https?://.*\.ngrok\.dev|^https?://localhost(:\d+)?|^https?://127\.0\.0\.1(:\d+)?",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -100,6 +123,9 @@ app.include_router(api_router, prefix="/api")
 
 from app.ingestion.router import router as root_ingestion_router
 app.include_router(root_ingestion_router, prefix="")
+
+from app.api.slack_router import router as slack_router
+app.include_router(slack_router)
 
 # Static files and assets
 if (STATIC_DIR / "assets").exists():

@@ -15,6 +15,7 @@ from app.integrations.schemas import (
     SyncTriggerResponse,
     WebhookIngestResponse,
 )
+from fastapi.responses import RedirectResponse
 from app.integrations.registry import ConnectorRegistry, OAuthManager
 import app.integrations.connectors  # Ensure connectors are registered
 from app.auth.dependencies import get_current_user, require_role, get_tenant_repo
@@ -23,6 +24,47 @@ from app.services.tenant_repository import TenantScopedRepository
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/integrations", tags=["Phase 3 — Universal Integration Platform"])
+
+def resolve_integration_callback_uri(provider: str, request: Optional[Request] = None, explicit_uri: Optional[str] = None) -> str:
+    """
+    Resolve OAuth callback URL dynamically for integration connectors:
+    1. Explicit redirect_uri param
+    2. Provider-specific env var (e.g., SLACK_REDIRECT_URI)
+    3. PUBLIC_API_URL or BACKEND_URL
+    4. Request-based dynamic host/proto
+    """
+    if explicit_uri:
+        return explicit_uri
+
+    if provider.lower() == "slack" and settings.SLACK_REDIRECT_URI:
+        return settings.SLACK_REDIRECT_URI
+
+    if settings.PUBLIC_API_URL:
+        return f"{settings.PUBLIC_API_URL.rstrip('/')}/api/v1/integrations/{provider}/callback"
+
+    if settings.BACKEND_URL:
+        return f"{settings.BACKEND_URL.rstrip('/')}/api/v1/integrations/{provider}/callback"
+
+    if request is not None:
+        proto = request.headers.get("x-forwarded-proto", request.url.scheme)
+        host = request.headers.get("x-forwarded-host", request.headers.get("host"))
+        if proto and host:
+            return f"{proto}://{host}/api/v1/integrations/{provider}/callback"
+        return f"{request.base_url}api/v1/integrations/{provider}/callback"
+
+    return f"http://{settings.HOST}:{settings.PORT}/api/v1/integrations/{provider}/callback"
+
+
+def resolve_integration_frontend_url(request: Request, provider: str) -> str:
+    if settings.FRONTEND_URL:
+        base = settings.FRONTEND_URL.rstrip('/')
+    elif settings.PUBLIC_API_URL:
+        base = settings.PUBLIC_API_URL.rstrip('/')
+    else:
+        proto = request.headers.get("x-forwarded-proto", request.url.scheme)
+        host = request.headers.get("x-forwarded-host", request.headers.get("host", "localhost:5173"))
+        base = f"{proto}://{host}"
+    return f"{base}/?connected={provider}#connections"
 
 PROVIDER_ICONS = {
     "slack": "💬",
@@ -111,8 +153,9 @@ def get_integrations(
 @router.get("/{provider}/authorize", summary="Generate OAuth authorization URL for connector")
 def authorize_connector(
     provider: str,
+    request: Request,
     redirect_uri: Optional[str] = None,
-    current_user: User = Depends(require_role(UserRole.ADMIN.value)),
+    current_user: User = Depends(get_current_user),
 ):
     connector = ConnectorRegistry.get(provider)
     if not connector:
@@ -122,10 +165,10 @@ def authorize_connector(
         )
 
     state = OAuthManager.generate_state(current_user.organization_id, provider)
-    cb_redirect = redirect_uri or f"http://localhost:8000/api/v1/integrations/{provider}/callback"
+    cb_redirect = resolve_integration_callback_uri(provider, request, redirect_uri)
     auth_url = connector.get_authorization_url(current_user.organization_id, state, cb_redirect)
 
-    return {"authorization_url": auth_url, "state": state}
+    return {"authorization_url": auth_url, "state": state, "redirect_uri": cb_redirect}
 
 
 @router.get("/{provider}/callback", summary="Handle OAuth callback and trigger background initial sync")
@@ -134,6 +177,7 @@ async def oauth_callback(
     code: str,
     state: str,
     background_tasks: BackgroundTasks,
+    request: Request,
     redirect_uri: Optional[str] = None,
     db: Session = Depends(get_db),
 ):
@@ -151,7 +195,7 @@ async def oauth_callback(
             detail=f"Connector not found for provider '{provider}'.",
         )
 
-    cb_redirect = redirect_uri or f"http://localhost:8000/api/v1/integrations/{provider}/callback"
+    cb_redirect = resolve_integration_callback_uri(provider, request, redirect_uri)
 
     try:
         # Synchronous token exchange & encrypted persistence
@@ -174,6 +218,14 @@ async def oauth_callback(
         reason="OAuth callback success",
         risk_level="MEDIUM",
     )
+
+    accept_header = request.headers.get("accept", "")
+    if "text/html" in accept_header and "application/json" not in accept_header:
+        redirect_target = resolve_integration_frontend_url(request, provider)
+        return RedirectResponse(
+            url=redirect_target,
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
 
     return {
         "status": "syncing",

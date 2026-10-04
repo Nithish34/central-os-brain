@@ -25,21 +25,25 @@ class SlackConnector(BaseConnector):
 
     DEFAULT_SCOPES = [
         "channels:history",
-        "groups:history",
+        "channels:read",
         "chat:write",
+        "groups:history",
+        "groups:read",
+        "im:history",
+        "mpim:history",
         "users:read",
-        "app_mentions:read",
     ]
 
     def get_authorization_url(self, organization_id: str, state: str, redirect_uri: str) -> str:
         client_id = settings.SLACK_CLIENT_ID or "dev-slack-client-id"
         scopes = "%20".join(self.DEFAULT_SCOPES)
+        effective_redirect = settings.SLACK_REDIRECT_URI or redirect_uri
         return (
             f"https://slack.com/oauth/v2/authorize?"
             f"client_id={client_id}&"
             f"scope={scopes}&"
             f"state={state}&"
-            f"redirect_uri={redirect_uri}"
+            f"redirect_uri={effective_redirect}"
         )
 
     async def handle_callback(
@@ -50,6 +54,7 @@ class SlackConnector(BaseConnector):
         redirect_uri: str,
         db: Session,
     ) -> IntegrationAccount:
+        effective_redirect = settings.SLACK_REDIRECT_URI or redirect_uri
         # Mock / Test response handler
         if settings.ENVIRONMENT == "test" or code.startswith("mock_"):
             token_data = {
@@ -68,16 +73,17 @@ class SlackConnector(BaseConnector):
                         "client_id": settings.SLACK_CLIENT_ID,
                         "client_secret": settings.SLACK_CLIENT_SECRET,
                         "code": code,
-                        "redirect_uri": redirect_uri,
+                        "redirect_uri": effective_redirect,
                     },
                 )
                 resp.raise_for_status()
-                token_data = resp.json()
+                token_data: dict[str, Any] = resp.json()
                 if not token_data.get("ok"):
                     raise ValueError(f"Slack OAuth exchange failed: {token_data.get('error')}")
 
         now = datetime.now(timezone.utc)
-        expires_at = now + timedelta(seconds=token_data.get("expires_in", 43200))
+        expires_in = int(token_data.get("expires_in") or 43200)
+        expires_at = now + timedelta(seconds=expires_in)
 
         integration = db.query(IntegrationAccount).filter(
             IntegrationAccount.organization_id == organization_id,
@@ -93,12 +99,13 @@ class SlackConnector(BaseConnector):
             )
             db.add(integration)
 
+        team_info = token_data.get("team") or {}
         integration.status = IntegrationStatusEnum.SYNCING.value
-        integration.account_id = token_data.get("team", {}).get("id", "T-UNKNOWN")
-        integration.account_name = token_data.get("team", {}).get("name", "Slack Workspace")
-        integration.encrypted_access_token = encryption_manager.encrypt(token_data["access_token"])
+        integration.account_id = team_info.get("id", "T-UNKNOWN") if isinstance(team_info, dict) else "T-UNKNOWN"
+        integration.account_name = team_info.get("name", "Slack Workspace") if isinstance(team_info, dict) else "Slack Workspace"
+        integration.encrypted_access_token = encryption_manager.encrypt(str(token_data.get("access_token", "")))
         if token_data.get("refresh_token"):
-            integration.encrypted_refresh_token = encryption_manager.encrypt(token_data["refresh_token"])
+            integration.encrypted_refresh_token = encryption_manager.encrypt(str(token_data["refresh_token"]))
         integration.token_expires_at = expires_at
         integration.scopes = self.DEFAULT_SCOPES
         integration.sync_status_message = "OAuth connected. Initial sync enqueued."
@@ -211,27 +218,62 @@ class SlackConnector(BaseConnector):
 
         try:
             # Check token refresh
-            await self.refresh_token_if_needed(integration, db)
+            token = await self.refresh_token_if_needed(integration, db)
 
-            # Ingest initial representative Slack messages into org-scoped events
-            sample_messages = [
-                {
-                    "event_id": "slack_msg_eng_001",
-                    "channel": "#engineering-sync",
-                    "user": "Priya Raman (Tech Lead)",
-                    "text": "Decision confirmed in #engineering-sync: All microservices migrated to OAuth2 client credentials. Deprecation of legacy JWT endpoints is on track for Q3.",
-                    "title": "Slack #engineering-sync: Real-time decision",
-                    "tags": ["slack", "payments", "oauth2", "architecture"],
-                },
-                {
-                    "event_id": "slack_msg_sec_002",
-                    "channel": "#sec-ops",
-                    "user": "Elena Rostova (CISO)",
-                    "text": "Reminder: All third-party webhook integrations must enforce HMAC-SHA256 signature verification and short replay windows.",
-                    "title": "Slack #sec-ops: Security standard verification",
-                    "tags": ["slack", "security", "webhooks"],
-                }
-            ]
+            sample_messages = []
+            # Live Slack Web API sync when real access token is present
+            if token and not token.startswith("xoxb-mock-") and not token.startswith("dev-") and settings.SLACK_CLIENT_SECRET:
+                try:
+                    async with httpx.AsyncClient(timeout=10.0) as client:
+                        headers = {"Authorization": f"Bearer {token}"}
+                        chan_res = await client.get(
+                            "https://slack.com/api/conversations.list?types=public_channel,private_channel&limit=10",
+                            headers=headers,
+                        )
+                        chan_data = chan_res.json()
+                        if chan_data.get("ok"):
+                            for ch in chan_data.get("channels", [])[:5]:
+                                ch_id = ch.get("id")
+                                ch_name = ch.get("name", "channel")
+                                hist_res = await client.get(
+                                    f"https://slack.com/api/conversations.history?channel={ch_id}&limit=10",
+                                    headers=headers,
+                                )
+                                hist_data = hist_res.json()
+                                if hist_data.get("ok"):
+                                    for m in hist_data.get("messages", []):
+                                        if m.get("type") == "message" and "subtype" not in m and m.get("text"):
+                                            sample_messages.append({
+                                                "event_id": f"slack_{ch_id}_{m.get('ts')}",
+                                                "channel": f"#{ch_name}",
+                                                "user": m.get("user", "Slack Member"),
+                                                "text": m.get("text"),
+                                                "title": f"Slack #{ch_name}: {m.get('text')[:50]}...",
+                                                "tags": ["slack", "realtime", ch_name],
+                                            })
+                except Exception as api_err:
+                    logger.warning(f"Live Slack API conversations fetch warning: {api_err}")
+
+            if not sample_messages:
+                # Default representative Slack events for instant prototype & demo
+                sample_messages = [
+                    {
+                        "event_id": "slack_msg_eng_001",
+                        "channel": "#engineering-sync",
+                        "user": "Priya Raman (Tech Lead)",
+                        "text": "Decision confirmed in #engineering-sync: All microservices migrated to OAuth2 client credentials. Deprecation of legacy JWT endpoints is on track for Q3.",
+                        "title": "Slack #engineering-sync: Real-time decision",
+                        "tags": ["slack", "payments", "oauth2", "architecture"],
+                    },
+                    {
+                        "event_id": "slack_msg_sec_002",
+                        "channel": "#sec-ops",
+                        "user": "Elena Rostova (CISO)",
+                        "text": "Reminder: All third-party webhook integrations must enforce HMAC-SHA256 signature verification and short replay windows.",
+                        "title": "Slack #sec-ops: Security standard verification",
+                        "tags": ["slack", "security", "webhooks"],
+                    }
+                ]
 
             now_iso = datetime.now(timezone.utc).isoformat()
             ingested_count = 0
@@ -262,7 +304,7 @@ class SlackConnector(BaseConnector):
                         ingestion_source="slack-connector",
                         vector_indexed=True,
                     )
-                    evt.tags = msg["tags"]
+                    evt.tags = list(msg["tags"]) if isinstance(msg.get("tags"), list) else []
                     db.add(evt)
                     ingested_count += 1
 

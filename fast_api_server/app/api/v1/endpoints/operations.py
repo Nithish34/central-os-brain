@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.caching import cache_manager, build_cache_key
 from app.models.user import User, UserRole
 from app.models.canonical_event import CanonicalEventModel
 from app.models.event_outbox import EventOutbox
@@ -166,6 +167,11 @@ def get_event_lifecycle(
 def get_worker_metrics(
     current_user: User = Depends(require_role(UserRole.ADMIN.value)),
 ):
+    cache_key = f"cb:cache:{current_user.organization_id}:worker_metrics:all"
+    cached = cache_manager.get(cache_key)
+    if cached is not None:
+        return cached
+
     group_stats = {}
     for grp in DEFAULT_CONSUMER_GROUPS:
         pending = event_bus.get_pending_count(grp)
@@ -174,11 +180,14 @@ def get_worker_metrics(
             "pending_messages": pending,
         }
 
-    return {
+    result = {
         "status": "online",
         "stream": "company_brain:events",
         "consumer_groups": group_stats,
     }
+
+    cache_manager.set(cache_key, result, ttl=15)
+    return result
 
 
 @router.get("/dead-letters", summary="List dead-lettered events for organization")

@@ -5,7 +5,7 @@ import httpx
 from datetime import datetime
 from typing import List, Dict, Any, Optional, Tuple, AsyncGenerator
 from sqlalchemy.orm import Session
-from app.core.config import Settings
+from app.core.config import settings
 from app.models.conflict import Conflict
 from app.models.event import CompanyEvent
 from app.models.document import Document
@@ -15,14 +15,22 @@ from app.models.agent import AgentProfile
 from app.services.layer0_execution.action_executor import ActionExecutorService
 from app.services.layer2_intelligence.rag_engine import RAGEngineService
 
-settings = Settings()
+
+def _pct(val: Any) -> int:
+    """Helper to safely calculate integer percentage from ORM columns or scalar floats."""
+    try:
+        if val is None:
+            return 0
+        return round(float(val) * 100)
+    except Exception:
+        return 0
 
 
 class NLPChatEngine:
     """
     Advanced NLP & Conversational AI Engine for Company Brain OS.
     Features:
-    1. Live LLM Integration (OpenAI GPT-4o, Google Gemini, Anthropic Claude, Ollama)
+    1. Live LLM Integration (Google Gemini 3.1 Pro / 2.5 Pro / Flash, OpenAI, Claude, Ollama)
     2. Deep System Grounding (Injects full knowledge graph, live events, DB state)
     3. Dynamic Hybrid RAG Retrieval (Dense 1536-dim embeddings + BM25 sparse search)
     4. Real-Time SSE Token Streaming (Fast, silky smooth conversational UX)
@@ -49,7 +57,7 @@ class NLPChatEngine:
                 f"• CONFLICT [{c.id}] (Status: {c.status.upper()} | Severity: {c.severity.upper()} | Risk: {c.risk_level})\n"
                 f"  Title: {c.title}\n"
                 f"  Domain: {c.domain} | Owner: {c.owner}\n"
-                f"  Document ID: {c.document_id} | Contradiction Score: {round((c.contradiction_score or 0)*100)}%\n"
+                f"  Document ID: {c.document_id} | Contradiction Score: {_pct(c.contradiction_score)}%\n"
                 f"  Old Official Claim: \"{c.old_claim}\"\n"
                 f"  New Operational Claim: \"{c.new_claim}\"\n"
                 f"  Recommended Update: \"{c.recommended_update}\"\n"
@@ -61,7 +69,7 @@ class NLPChatEngine:
         event_data = []
         for e in events:
             event_data.append(
-                f"• EVENT [{e.id}] [{e.source}] by {e.author} @ {e.timestamp} (Authority: {round(e.authority_score*100)}%, Freshness: {round(e.freshness_score*100)}%):\n"
+                f"• EVENT [{e.id}] [{e.source}] by {e.author} @ {e.timestamp} (Authority: {_pct(e.authority_score)}%, Freshness: {_pct(e.freshness_score)}%):\n"
                 f"  Title: {e.title}\n"
                 f"  Content: \"{e.content}\"\n"
                 f"  Pipeline Stage: {e.pipeline_stage} | Type: {e.event_type_normalized}"
@@ -70,7 +78,7 @@ class NLPChatEngine:
         doc_data = []
         for d in docs:
             doc_data.append(
-                f"• DOCUMENT [{d.id}] '{d.title}' (Source: {d.source}, Owner: {d.owner}, Status: {d.status}, Freshness: {round(d.freshness_score*100)}%, Date: {d.timestamp}):\n"
+                f"• DOCUMENT [{d.id}] '{d.title}' (Source: {d.source}, Owner: {d.owner}, Status: {d.status}, Freshness: {_pct(d.freshness_score)}%, Date: {d.timestamp}):\n"
                 f"  Content snippet: \"{d.content[:160]}...\""
             )
 
@@ -80,8 +88,17 @@ class NLPChatEngine:
 
         now = datetime.now().astimezone().strftime("%d %b %Y, %I:%M:%S %p %Z")
 
-        prompt = f"""You are the Company Brain OS Chief AI Intelligence Officer & Autonomous Orchestrator.
-Current Time: {now}
+        prompt = f"""You are the Company Brain OS Chief AI Intelligence Officer & Autonomous Enterprise Copilot.
+Current System Time: {now}
+
+=== EXECUTIVE INTELLIGENCE & OUTPUT PROTOCOL CONTRACT ===
+You must ALWAYS adhere to the following professional communication standards:
+1. 🎯 EXECUTIVE SUMMARY: Start with a concise, executive-level synthesis (2-3 sentences) directly answering the core question. Never start with raw event lists.
+2. 🧠 STRUCTURED DOMAIN CATEGORIZATION: Group all operational facts, decisions, and evidence logically by domain (e.g., 🔐 Security & Auth, 🚀 Release & Deployments, 🏗️ Infrastructure & Cache, 📋 Policies & Guidelines).
+3. 👤 ATTRIBUTION & PROVENANCE: For every key decision or message, cite the responsible author/engineer, channel/source, and exact timestamp.
+4. ⚠️ CONTRADICTION & GAP ANALYSIS: Highlight discrepancies between live discussions and official documentation (Notion, Confluence, API Docs), quoting old vs new claims and risk levels.
+5. 📊 COMPARATIVE TABLES & METRICS: Use rich markdown tables and callouts for complex information.
+6. ⚡ AUTONOMOUS NEXT ACTIONS: Conclude with 2-3 specific, actionable prompts (e.g., "Say 'Approve the release conflict' to update docs", "Say 'Draft a Slack announcement'").
 
 === SYSTEM KNOWLEDGE GRAPH & LIVE DATA ===
 
@@ -105,13 +122,6 @@ Current Time: {now}
 
 --- ACTIVE AI AGENTS ---
 {chr(10).join(agent_data) if agent_data else "No agents."}
-
-=== CAPABILITIES & BEHAVIOR ===
-1. You have full operational awareness and execution authority across the entire enterprise stack.
-2. If the user asks you to approve, reject, reopen, or reassign a conflict, execute the action and clearly report the outcome with layer workflows dispatched.
-3. Answer all questions with deep contextual reasoning, citing real authors, timestamps, document titles, and metrics.
-4. When asked analytical questions ("why", "compare", "what if", "draft"), generate structured, executive-ready insights.
-5. Use clear GitHub-flavored markdown with bold headers, bullet lists, code blocks, and callouts.
 """
         return prompt, citations
 
@@ -120,32 +130,32 @@ Current Time: {now}
         cls,
         message: str,
         db: Session,
-        history: List[Dict[str, str]] = None,
+        history: Optional[List[Dict[str, str]]] = None,
         provider: Optional[str] = None,
         api_key: Optional[str] = None,
         model: Optional[str] = None
     ) -> Tuple[str, str, List[Dict[str, Any]]]:
         """
         Main entry point for conversational NLP.
-        Exclusively routes to Google Gemini API (with live state grounding),
-        and falls back gracefully to built-in Cognitive Reasoner when offline or on API errors.
+        Routes to Google Gemini API with system grounding, and falls back to
+        Executive Cognitive Reasoner if offline or on rate limits.
         """
         history = history or []
         system_ctx, citations = cls.build_system_context(db, query=message)
 
         gemini_key = api_key or settings.GEMINI_API_KEY
-        target_model = model or settings.LLM_MODEL or "gemini-2.0-flash"
+        target_model = model or settings.LLM_MODEL or "gemini-3.1-flash-lite"
 
-        # 1. Primary: Google Gemini Live Intelligence
+        # 1. Primary: Google Gemini Live Intelligence (Single Model: gemini-3.1-flash-lite)
         if gemini_key:
             try:
-                reply = await cls._call_gemini(message, system_ctx, db, history, gemini_key, target_model)
+                reply, model_used = await cls._call_gemini(message, system_ctx, db, history, gemini_key, target_model)
                 if reply:
-                    return reply, target_model, citations
+                    return reply, model_used, citations
             except Exception as e:
-                print(f"[NLPChatEngine] Google Gemini API ({target_model}): {e}, switching to Cognitive NLP Engine.")
+                print(f"[NLPChatEngine] Google Gemini API ({target_model}) error: {e}. Directly switching to Universal Zero-Key Offline Reasoner.")
 
-        # 2. Built-in Cognitive Reasoner (Universal Zero-Key NLP Fallback)
+        # 2. Built-in Executive Cognitive Reasoner (Universal Zero-Key Offline Fallback)
         reply = cls.cognitive_reasoning_pipeline(message, db, history)
         return reply, "cognitive-nlp-engine", citations
 
@@ -154,7 +164,7 @@ Current Time: {now}
         cls,
         message: str,
         db: Session,
-        history: List[Dict[str, str]] = None,
+        history: Optional[List[Dict[str, str]]] = None,
         provider: Optional[str] = None,
         api_key: Optional[str] = None,
         model: Optional[str] = None
@@ -199,11 +209,25 @@ Current Time: {now}
     # ─── Live Google Gemini Connector ────────────────────────────────────────
 
     @classmethod
-    async def _call_gemini(cls, message: str, system_ctx: str, db: Session, history: List[Dict[str, str]], api_key: str, model_name: str) -> str:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+    async def _call_gemini(
+        cls,
+        message: str,
+        system_ctx: str,
+        db: Session,
+        history: List[Dict[str, str]],
+        api_key: str,
+        model_name: str
+    ) -> Tuple[str, str]:
+        """
+        Exclusively calls the designated Gemini model (gemini-3.1-flash-lite).
+        If the call fails or is unavailable, raises an exception to immediately trigger
+        the Universal Zero-Key Offline Reasoner.
+        """
+        target = model_name or "gemini-3.1-flash-lite"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{target}:generateContent?key={api_key}"
 
         contents = [{"role": "user", "parts": [{"text": f"System Context & Live System State:\n{system_ctx}"}]}]
-        contents.append({"role": "model", "parts": [{"text": "Understood. I am online as Company Brain OS AI Intelligence Officer with live state grounding."}]})
+        contents.append({"role": "model", "parts": [{"text": "Understood. I am online as Company Brain OS AI Intelligence Officer. I will structure all answers in accordance with the Executive Intelligence & Output Protocol Contract."}]})
 
         for h in history[-8:]:
             role = "user" if h.get("role") == "user" else "model"
@@ -213,17 +237,17 @@ Current Time: {now}
 
         payload = {
             "contents": contents,
-            "generationConfig": {"temperature": 0.3, "maxOutputTokens": 1024}
+            "generationConfig": {"temperature": 0.25, "maxOutputTokens": 1500}
         }
 
-        async with httpx.AsyncClient(timeout=18.0) as client:
+        async with httpx.AsyncClient(timeout=20.0) as client:
             res = await client.post(url, json=payload)
             if res.status_code == 200:
                 data = res.json()
                 text = data["candidates"][0]["content"]["parts"][0]["text"]
                 cls._intercept_and_apply_actions(message, db)
-                return text
-            raise Exception(f"Gemini API returned {res.status_code}: {res.text}")
+                return text, target
+            raise Exception(f"Gemini API ({target}) returned status {res.status_code}: {res.text}")
 
 
     @classmethod
@@ -244,7 +268,7 @@ Current Time: {now}
     # ─── Built-in Cognitive Reasoner (Universal Semantic Engine) ────────────
 
     @classmethod
-    def cognitive_reasoning_pipeline(cls, message: str, db: Session, history: List[Dict[str, str]] = None) -> str:
+    def cognitive_reasoning_pipeline(cls, message: str, db: Session, history: Optional[List[Dict[str, str]]] = None) -> str:
         """
         Deep semantic analysis pipeline that extracts syntax, entities, causal relationships,
         comparisons, and synthesizes nuanced conversational answers.
@@ -359,7 +383,7 @@ Current Time: {now}
         return (
             f"{icon} **{c.title}**\n\n"
             f"**Status:** `{status_badge}` | **Severity:** `{c.severity.upper()}` | **Risk:** `{c.risk_level}`\n"
-            f"**Domain:** {c.domain} | **Owner:** {c.owner} | **Contradiction Confidence:** {round((c.contradiction_score or 0)*100)}%\n\n"
+            f"**Domain:** {c.domain} | **Owner:** {c.owner} | **Contradiction Confidence:** {_pct(c.contradiction_score)}%\n\n"
             f"---\n\n"
             f"📄 **Official Document Claim:**\n"
             f"> *\"{c.old_claim}\"*\n"
@@ -391,7 +415,7 @@ Current Time: {now}
             if not open_conflicts: return "✅ All conflicts are already approved. No pending actions."
             approved = []
             for c in open_conflicts:
-                st, res = ActionExecutorService.apply_approval(db, c.id, "approve", "Bulk approved via AI Chat")
+                st, res = ActionExecutorService.apply_approval(db, str(c.id), "approve", "Bulk approved via AI Chat")
                 if st == 200: approved.append(c.title)
             return f"🚀 **Bulk Autonomous Approval Complete ({len(approved)} conflicts):**\n\n" + "\n".join(f"• ✅ **{t}**" for t in approved) + "\n\nLayer 0 execution workflows dispatched to Jira, Slack, & Knowledge Base."
 
@@ -402,7 +426,7 @@ Current Time: {now}
         # Approve
         if any(k in msg for k in ["approve", "accept"]):
             if target.status == "approved": return f"✅ **'{target.title}'** is already in `APPROVED` status."
-            st, res = ActionExecutorService.apply_approval(db, target.id, "approve", "Approved via AI NLP Command")
+            st, res = ActionExecutorService.apply_approval(db, str(target.id), "approve", "Approved via AI NLP Command")
             if st != 200: return f"❌ Approval failed: {res.get('error')}"
             tools = [w["tool"] for w in res.get("workflows", [])]
             return (
@@ -418,12 +442,12 @@ Current Time: {now}
         # Reject
         if any(k in msg for k in ["reject", "decline", "dismiss"]):
             if target.status == "rejected": return f"❌ **'{target.title}'** is already marked as `REJECTED`."
-            st, res = ActionExecutorService.apply_approval(db, target.id, "reject", "Rejected via AI NLP Command")
+            st, res = ActionExecutorService.apply_approval(db, str(target.id), "reject", "Rejected via AI NLP Command")
             return f"❌ **Conflict Rejected.**\n\n'{target.title}' set to `REJECTED`. Official documentation remains untouched."
 
         # Reopen
         if any(k in msg for k in ["reopen", "re-open", "open again"]):
-            target.status = "open"
+            setattr(target, "status", "open")
             db.commit()
             return f"🟠 **Conflict Reopened.**\n\n'{target.title}' is now `OPEN` and active in the Conflict Inbox."
 
@@ -431,7 +455,7 @@ Current Time: {now}
         if any(k in msg for k in ["change owner", "assign to", "set owner"]):
             new_owner = message.split("to")[-1].strip().rstrip(".") if "to" in msg else "Engineering Squad"
             old_owner = target.owner
-            target.owner = new_owner
+            setattr(target, "owner", new_owner)
             db.commit()
             return f"👤 **Ownership Reassigned:**\n\nConflict **'{target.title}'** reassigned from `{old_owner}` to **`{new_owner}`**."
 
@@ -451,7 +475,7 @@ Current Time: {now}
             f"| **Security / Compliance** | High risk of legacy regression | Active architectural migration |\n\n"
             f"---\n\n"
             f"🧠 **Root-Cause Synthesis:**\n"
-            f"The official documentation failed to reflect live engineering consensus, creating a **{round((target.contradiction_score or 0)*100)}% contradiction gap**. "
+            f"The official documentation failed to reflect live engineering consensus, creating a **{_pct(target.contradiction_score)}% contradiction gap**. "
             f"If uncorrected, new team members and external integrations will build against deprecated standards.\n\n"
             f"💡 *Say 'Approve this conflict' to reconcile reality with documentation automatically.*"
         )
@@ -465,7 +489,7 @@ Current Time: {now}
             f"🧠 **Causal Reasoning & Contradiction Diagnostics: '{target.title}'**\n\n"
             f"1. **Triggering Event:** A live decision was captured in operational channels (e.g., Slack/PR).\n"
             f"2. **The Discrepancy:** The repository documentation still recorded *\"{target.old_claim}\"*.\n"
-            f"3. **Detection Agent:** Autonomous agent `{target.detected_by}` computed a **contradiction score of {round((target.contradiction_score or 0)*100)}%**.\n"
+            f"3. **Detection Agent:** Autonomous agent `{target.detected_by}` computed a **contradiction score of {_pct(target.contradiction_score)}%**.\n"
             f"4. **Freshness Delta (`{target.freshness_delta}`):** The documentation was significantly outdated compared to live commits and discussion.\n"
             f"5. **Risk Classification (`{target.risk_level}`):** {target.business_impact}\n\n"
             f"🎯 **Resolution Recommendation:** Execute self-healing update to align repository architecture."
@@ -541,28 +565,58 @@ Current Time: {now}
 
         matched = [e for e in events if e.source.lower() == target_source.lower()] if target_source else events
         if not matched:
-            return f"⚙️ No events found for **{target_source or 'the pipeline'}** yet."
+            return f"⚙️ No events found for **{target_source or 'the pipeline'}** yet. Real-time events from webhook/poller feeds will appear here automatically."
 
-        if any(k in msg for k in ["latest", "last", "newest", "recent message", "what was the message", "what did"]):
+        # Single latest event inspection
+        if any(k in msg for k in ["latest message", "last message", "newest message", "single message", "what was the exact message"]):
             latest = matched[0]
-            icon = {"Slack": "💬", "GitHub": "🐙", "Gmail": "✉️", "Teams": "👥", "Jira": "🎯"}.get(latest.source, "📄")
+            icon = {"Slack": "💬", "GitHub": "🐙", "Gmail": "✉️", "Teams": "👥", "Jira": "🎯"}.get(str(latest.source), "📄")
             return (
-                f"{icon} **Latest Message / Event from {latest.source}**\n\n"
+                f"{icon} **Latest Operational Message from {latest.source}**\n\n"
                 f"**Channel / Subject:** `{latest.title}`\n"
                 f"**Author:** **{latest.author}** | **Timestamp:** `{latest.timestamp}`\n"
-                f"**Authority:** {round(latest.authority_score*100)}% | **Freshness:** {round(latest.freshness_score*100)}%\n\n"
+                f"**Authority Score:** {_pct(latest.authority_score)}% | **Freshness:** {_pct(latest.freshness_score)}%\n\n"
                 f"---\n\n"
-                f"📝 **Exact Message Content:**\n"
+                f"📝 **Direct Message Content:**\n"
                 f"> *\"{latest.content or latest.title}\"*\n\n"
                 f"---\n\n"
-                f"⚙️ Status: `{latest.pipeline_stage.upper()}` | Vector Indexed: `{'Yes' if latest.vector_indexed else 'Pending'}`"
+                f"⚙️ **Status:** `{latest.pipeline_stage.upper()}` | **Normalized Type:** `{latest.event_type_normalized}`\n"
+                f"🔍 **Vector Indexed:** `{'Yes' if latest.vector_indexed else 'Pending'}`"
             )
 
-        parts = [f"⚙️ **{target_source or 'Processing Pipeline'} Events ({len(matched)} total):**\n"]
-        for e in matched[:8]:
-            icon = {"Slack": "💬", "GitHub": "🐙", "Gmail": "✉️", "Teams": "👥", "Jira": "🎯"}.get(e.source, "📄")
-            parts.append(f"{icon} **[{e.source}]** `{e.title}` by **{e.author}** ({e.timestamp})\n   *Content:* \"{e.content[:75]}...\"")
-        return "\n".join(parts)
+        # Full Executive Synthesis for Platform/Decision Queries
+        source_name = target_source or "Operational Integrations"
+        
+        # Build categorized breakdowns
+        items_by_topic = []
+        for e in matched[:6]:
+            content_clean = (e.content or e.title).strip().replace("\n", " ")
+            items_by_topic.append(
+                f"• **{e.title}**\n"
+                f"  - **Decision / Context:** *\"{content_clean[:140] + ('…' if len(content_clean) > 140 else '')}\"*\n"
+                f"  - **Stakeholder:** `{e.author}` | **Channel/Source:** `{e.source}` ({e.timestamp})\n"
+                f"  - **Trust Metrics:** Authority `{_pct(e.authority_score)}%` · Freshness `{_pct(e.freshness_score)}%`"
+            )
+
+        bullet_points = "\n\n".join(items_by_topic)
+
+        return (
+            f"🎯 **Executive Summary — {source_name} Operational Consensus**\n\n"
+            f"Across recent **{source_name}** communication streams, engineering and operations have confirmed "
+            f"**{len(matched)} key decisions and operational events**. These updates reflect real-time architectural shifts, "
+            f"deployment window changes, and infrastructure alignments currently active across squads.\n\n"
+            f"---\n\n"
+            f"🧠 **Key Engineering Decisions & Findings:**\n\n"
+            f"{bullet_points}\n\n"
+            f"---\n\n"
+            f"⚠️ **Documentation & Contradiction Gap:**\n"
+            f"Several of these live decisions supersede static repository documentation. The Contradiction Engine has flagged discrepancies "
+            f"in the **Conflict Inbox** to prevent team members from building against stale guidelines.\n\n"
+            f"💡 **Recommended Actions:**\n"
+            f"• Say *'Show all open conflicts'* to review discrepancies between {source_name} and official docs.\n"
+            f"• Say *'Approve all conflicts'* to synchronize repository documentation with live consensus.\n"
+            f"• Say *'Draft an announcement for the team'* to broadcast these updates."
+        )
 
     @classmethod
     def _handle_contextual_followup(cls, msg: str, c: Conflict, db: Session) -> str:

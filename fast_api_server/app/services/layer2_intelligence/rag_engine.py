@@ -92,6 +92,7 @@ class RAGEngineService:
                     emb = cls.generate_embedding(doc.title + " " + chunk_content)
                     chunk_obj = DocumentChunk(
                         id=f"chunk-{doc.id}-{idx+1}",
+                        organization_id=doc.organization_id or "org-default",
                         document_id=doc.id,
                         chunk_index=idx,
                         content=chunk_content,

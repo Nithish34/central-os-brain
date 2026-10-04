@@ -483,7 +483,7 @@ export const CommandCenterView: React.FC<CommandCenterViewProps> = ({
             </div>
 
             <p className="cc-disclaimer-text">
-              Axiom may generate inaccurate information about people, places, or facts. Model: Axiom Ground Truth v2.0
+              Axiom may generate inaccurate information about people, places, or facts. Model: Google Gemini 3.1 Flash Lite (Grounded v2.0)
             </p>
           </div>
         </div>
