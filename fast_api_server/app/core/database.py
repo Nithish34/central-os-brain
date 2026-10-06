@@ -36,4 +36,10 @@ def get_db() -> Generator[Session, None, None]:
 def init_db() -> None:
     # Helper to create tables directly if needed (e.g. in test fixtures or fallback)
     import app.models  # noqa: F401
+    from sqlalchemy import text
     Base.metadata.create_all(bind=engine)
+    try:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE events ADD COLUMN IF NOT EXISTS metadata_json TEXT DEFAULT '{}' NOT NULL;"))
+    except Exception:
+        pass

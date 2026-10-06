@@ -120,14 +120,29 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ integrations
   const [simContent, setSimContent] = useState('The team decided to migrate AWS database instances to Aurora v2 by Friday 5 PM.');
   const [simAuthor, setSimAuthor] = useState('sarah.eng@companybrain.local');
   const [isSimulating, setIsSimulating] = useState(false);
+  const [githubStatus, setGithubStatus] = useState<any>(null);
 
-  // Auto-refresh integration statuses and verify Slack connection on mount / callback navigation
+  // Auto-refresh integration statuses and verify Slack & GitHub connections on mount / callback navigation
   useEffect(() => {
     let isMounted = true;
     const checkStatusAndRefresh = async () => {
       const urlParams = new URLSearchParams(window.location.search);
       const isConnectedSlack = urlParams.get('connected') === 'slack';
+      const isConnectedGithub = urlParams.get('connected') === 'github';
       const isConnectionsHash = window.location.hash.includes('connections');
+
+      // Fetch GitHub status dynamically
+      try {
+        const ghSt = await apiService.getGitHubStatus();
+        if (isMounted && ghSt) {
+          setGithubStatus(ghSt);
+          if (isConnectedGithub && ghSt.is_connected) {
+            showToast(`GitHub account (${ghSt.github_login || 'connected'}) synced successfully!`, 'success');
+          }
+        }
+      } catch {
+        // Ignore offline error
+      }
 
       if (isConnectedSlack || isConnectionsHash) {
         try {
@@ -180,7 +195,12 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ integrations
 
   const handleDisconnect = async (provider: string, name: string) => {
     try {
-      await apiService.disconnectIntegration(provider);
+      if (provider.toLowerCase() === 'github') {
+        await apiService.disconnectGitHub();
+        setGithubStatus({ is_connected: false, is_active: false });
+      } else {
+        await apiService.disconnectIntegration(provider);
+      }
       showToast(`Disconnected ${name}`, 'info');
       onRefreshAll();
     } catch (err: any) {
@@ -191,7 +211,13 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ integrations
   const handleSync = async (provider: string) => {
     setSyncingProvider(provider);
     try {
-      await apiService.syncIntegration(provider);
+      if (provider.toLowerCase() === 'github') {
+        await apiService.syncGitHubNow();
+        const ghSt = await apiService.getGitHubStatus();
+        setGithubStatus(ghSt);
+      } else {
+        await apiService.syncIntegration(provider);
+      }
       showToast(`Synchronized ${provider.toUpperCase()} connector!`, 'success');
       onRefreshAll();
     } catch {
@@ -285,7 +311,16 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ integrations
           const brand = BRAND[conn.provider] || BRAND.github;
           const isSyncing = syncingProvider === conn.provider;
           const isConnectingThis = connectingProvider === conn.provider;
-          const isConnected = conn.status === 'connected';
+          const isGitHub = conn.provider === 'github';
+          const isConnected = isGitHub && githubStatus !== null
+            ? Boolean(githubStatus.is_connected)
+            : conn.status === 'connected';
+          const accountName = isGitHub && githubStatus?.github_login
+            ? `github.com/${githubStatus.github_login}`
+            : (conn.account_name || (isConnected ? 'Connected Workspace' : 'Disconnected'));
+          const repoCount = isGitHub && githubStatus?.repo_count !== undefined
+            ? githubStatus.repo_count
+            : (githubStatus?.synced_repos?.length || 2);
           return (
             <article key={conn.provider} className={`intg-card ${isConnected ? 'is-connected' : 'is-disconnected'}`}
               style={{ '--card-glow': brand.glow } as React.CSSProperties}>
@@ -297,7 +332,7 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ integrations
                   </div>
                   <div className="intg-identity-text">
                     <h3 className="intg-name">{conn.name}</h3>
-                    <p className="intg-account">{conn.account_name || (isConnected ? 'Connected Workspace' : 'Disconnected')}</p>
+                    <p className="intg-account">{accountName}</p>
                   </div>
                 </div>
                 <div className={`intg-status-badge ${isConnected ? 'is-ok' : 'is-warn'}`}>
@@ -311,12 +346,18 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ integrations
               </div>
               <div className="intg-meta">
                 <div className="intg-meta-item">
-                  <span className="intg-meta-num">{conn.events_ingested.toLocaleString()}</span>
-                  <span className="intg-meta-key">Events</span>
+                  <span className="intg-meta-num">
+                    {isGitHub ? repoCount : conn.events_ingested.toLocaleString()}
+                  </span>
+                  <span className="intg-meta-key">{isGitHub ? 'Repositories' : 'Events'}</span>
                 </div>
                 <div className="intg-meta-divider" />
                 <div className="intg-meta-item">
-                  <span className="intg-meta-num">{new Date(conn.last_sync).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                  <span className="intg-meta-num">
+                    {isGitHub && githubStatus?.last_polled_at
+                      ? new Date(githubStatus.last_polled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                      : new Date(conn.last_sync).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
                   <span className="intg-meta-key">Last sync</span>
                 </div>
                 <div className="intg-meta-divider" />

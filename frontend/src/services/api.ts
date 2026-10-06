@@ -139,9 +139,28 @@ export const apiService = {
     return request<{ is_connected: boolean; is_active: boolean; connection_id?: string; slack_team_id?: string; slack_user_id?: string; last_polled_at?: string; created_at?: string }>('/api/slack/status');
   },
 
+  async getGitHubStatus(): Promise<{ is_connected: boolean; is_active: boolean; connection_id?: string; github_user_id?: string; github_login?: string; synced_repos?: string[]; repo_count?: number; last_polled_at?: string; created_at?: string }> {
+    return request<{ is_connected: boolean; is_active: boolean; connection_id?: string; github_user_id?: string; github_login?: string; synced_repos?: string[]; repo_count?: number; last_polled_at?: string; created_at?: string }>('/api/github/status');
+  },
+
+  async syncGitHubNow(): Promise<{ status: string; message?: string }> {
+    return request<{ status: string; message?: string }>('/api/github/sync', {
+      method: 'POST',
+    });
+  },
+
+  async disconnectGitHub(): Promise<{ status: string; message?: string }> {
+    return request<{ status: string; message?: string }>('/api/github/disconnect', {
+      method: 'DELETE',
+    });
+  },
+
   async getAuthorizeUrl(provider: string): Promise<{ authorization_url: string; state: string }> {
     if (provider.toLowerCase() === 'slack') {
       return request<{ authorization_url: string; state: string }>('/api/slack/connect');
+    }
+    if (provider.toLowerCase() === 'github') {
+      return request<{ authorization_url: string; state: string }>('/api/github/connect');
     }
     return request<{ authorization_url: string; state: string }>(`/api/v1/integrations/${provider}/authorize`);
   },

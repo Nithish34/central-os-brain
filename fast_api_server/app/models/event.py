@@ -25,6 +25,7 @@ class CompanyEvent(Base):
     authority_score = Column(Float, default=0.85, nullable=False)
     freshness_score = Column(Float, default=0.95, nullable=False)
     _tags = Column("tags", Text, default="[]", nullable=False)
+    _metadata_json = Column("metadata_json", Text, default="{}", nullable=False)
 
     # Layer 3 & Layer 4 Pipeline metadata
     pipeline_stage = Column(String(64), default="processed", nullable=False)  # queued, routed, processed
@@ -50,3 +51,14 @@ class CompanyEvent(Base):
     @tags.setter
     def tags(self, value: list[str]) -> None:
         self._tags = json.dumps(value)
+
+    @property
+    def metadata_json(self) -> dict:
+        try:
+            return json.loads(self._metadata_json)
+        except Exception:
+            return {}
+
+    @metadata_json.setter
+    def metadata_json(self, value: dict) -> None:
+        self._metadata_json = json.dumps(value)

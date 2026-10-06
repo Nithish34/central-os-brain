@@ -127,6 +127,9 @@ app.include_router(root_ingestion_router, prefix="")
 from app.api.slack_router import router as slack_router
 app.include_router(slack_router)
 
+from app.api.github_router import router as github_router
+app.include_router(github_router)
+
 # Static files and assets
 if (STATIC_DIR / "assets").exists():
     app.mount("/assets", StaticFiles(directory=str(STATIC_DIR / "assets")), name="assets")

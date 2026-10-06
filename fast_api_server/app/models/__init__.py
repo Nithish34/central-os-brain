@@ -13,6 +13,7 @@ from app.models.event_outbox import EventOutbox
 from app.models.event_processing import EventProcessingState
 from app.models.event_dead_letter import EventDeadLetter
 from app.models.slack_connection import SlackConnection
+from app.models.github_connection import GitHubConnection
 
 __all__ = [
     "Organization",
@@ -35,4 +36,5 @@ __all__ = [
     "EventProcessingState",
     "EventDeadLetter",
     "SlackConnection",
+    "GitHubConnection",
 ]

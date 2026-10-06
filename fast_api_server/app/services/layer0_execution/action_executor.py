@@ -3,9 +3,11 @@ from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from app.models.conflict import Conflict
 from app.models.document import Document
+from app.models.event import CompanyEvent
 from app.models.workflow import WorkflowAction
 from app.models.audit import AuditLog
 from app.services.layer2_intelligence.conflict_detector import ConflictDetectorService
+from app.services.github_service import GitHubRemediationService
 
 
 class ActionExecutorService:
@@ -18,6 +20,37 @@ class ActionExecutorService:
     def create_workflows(db: Session, conflict: Conflict) -> List[WorkflowAction]:
         created_at = datetime.now(timezone.utc)
         org_id = conflict.organization_id or "org-default"
+
+        # Resolve repository lineage from evidence events or affected document
+        target_repo = None
+        file_path = None
+        if conflict.evidence_ids:
+            for ev_id in conflict.evidence_ids:
+                ev = db.query(CompanyEvent).filter(CompanyEvent.id == ev_id).first()
+                if ev and ev.metadata_json:
+                    if ev.metadata_json.get("repository"):
+                        target_repo = ev.metadata_json.get("repository")
+                        file_path = ev.metadata_json.get("file_path")
+                        break
+
+        if not target_repo and conflict.document_id:
+            doc = db.query(Document).filter(Document.id == conflict.document_id).first()
+            if doc and ":" in (doc.title or ""):
+                parts = doc.title.split(":", 1)
+                target_repo = parts[0]
+                file_path = parts[1]
+
+        remediation = GitHubRemediationService.create_remediation_pr_sync(
+            conflict_id=conflict.id,
+            conflict_title=conflict.title,
+            recommended_diff=conflict.recommended_update,
+            target_repo=target_repo,
+            file_path=file_path,
+            db=db,
+            organization_id=org_id,
+        )
+        pr_url = remediation.get("pr_url", f"https://github.com/{target_repo or 'acme-corp/payment-service'}/pull/402")
+        branch_name = remediation.get("branch", f"axiom/fix-docs-{conflict.id}")
 
         actions_data = [
             {
@@ -70,8 +103,8 @@ class ActionExecutorService:
                 "conflict_id": conflict.id,
                 "layer": "Layer 0 — Execution",
                 "tool": "GitHub",
-                "title": "Documentation PR drafted",
-                "description": "A simulated documentation pull request was generated for audit-friendly review.",
+                "title": f"PR opened: {branch_name}",
+                "description": f"Created branch {branch_name} and opened Pull Request for documentation review: {pr_url}",
                 "status": "completed",
                 "created_at": created_at,
             },

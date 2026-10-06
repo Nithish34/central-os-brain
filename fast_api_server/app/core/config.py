@@ -87,6 +87,9 @@ class Settings(BaseSettings):
     SLACK_WEBHOOK_URL: Optional[str] = None
     GITHUB_CLIENT_ID: Optional[str] = None
     GITHUB_CLIENT_SECRET: Optional[str] = None
+    GITHUB_REDIRECT_URI: Optional[str] = None
+    GITHUB_TOKEN: Optional[str] = None
+    GITHUB_REPO: Optional[str] = None
     GITHUB_WEBHOOK_SECRET: Optional[str] = "github_demo_secret_2026"
     TEAMS_CLIENT_SECRET: Optional[str] = "teams_demo_secret_2026"
     GMAIL_PUBSUB_VERIFICATION_TOKEN: Optional[str] = "gmail_demo_token_2026"

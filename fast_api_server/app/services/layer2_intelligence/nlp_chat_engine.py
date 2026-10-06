@@ -12,6 +12,7 @@ from app.models.document import Document
 from app.models.workflow import WorkflowAction
 from app.models.audit import AuditLog
 from app.models.agent import AgentProfile
+from app.models.github_connection import GitHubConnection
 from app.services.layer0_execution.action_executor import ActionExecutorService
 from app.services.layer2_intelligence.rag_engine import RAGEngineService
 
@@ -47,6 +48,7 @@ class NLPChatEngine:
         workflows = db.query(WorkflowAction).order_by(WorkflowAction.created_at.desc()).limit(12).all()
         audits = db.query(AuditLog).order_by(AuditLog.timestamp.desc()).limit(10).all()
         agents = db.query(AgentProfile).all()
+        github_conns = db.query(GitHubConnection).filter(GitHubConnection.is_active.is_(True)).all()
 
         # Hybrid RAG Context Retrieval for specific prompt
         rag_context, citations = RAGEngineService.get_rag_context(db, query or "company engineering architecture and decisions", top_k=4)
@@ -86,6 +88,14 @@ class NLPChatEngine:
         audit_data = [f"• AUDIT: {a.actor} -> {a.action.upper()} '{a.title}' @ {a.timestamp} (Risk: {a.risk_level})" for a in audits]
         agent_data = [f"• AGENT [{a.name}] ({a.domain}): Status {a.status}, {a.conflicts_detected} conflicts detected, {a.tasks_completed} tasks" for a in agents]
 
+        github_data = []
+        for g in github_conns:
+            repos = g.get_synced_repos()
+            repos_str = ", ".join(repos) if repos else "No repositories synced"
+            github_data.append(
+                f"• GITHUB CONNECTION: Account @{g.github_login} (User ID: {g.user_id}, Repositories: [{repos_str}], Last Polled: {g.last_polled_at})"
+            )
+
         now = datetime.now().astimezone().strftime("%d %b %Y, %I:%M:%S %p %Z")
 
         prompt = f"""You are the Company Brain OS Chief AI Intelligence Officer & Autonomous Enterprise Copilot.
@@ -99,8 +109,12 @@ You must ALWAYS adhere to the following professional communication standards:
 4. ⚠️ CONTRADICTION & GAP ANALYSIS: Highlight discrepancies between live discussions and official documentation (Notion, Confluence, API Docs), quoting old vs new claims and risk levels.
 5. 📊 COMPARATIVE TABLES & METRICS: Use rich markdown tables and callouts for complex information.
 6. ⚡ AUTONOMOUS NEXT ACTIONS: Conclude with 2-3 specific, actionable prompts (e.g., "Say 'Approve the release conflict' to update docs", "Say 'Draft a Slack announcement'").
+7. 🐙 REPOSITORY & CODEBASE PROVENANCE: When asked about connected GitHub repositories, current codebases, or GitHub accounts, you MUST cite the real repositories listed under 'CONNECTED GITHUB REPOSITORIES'. Do NOT hallucinate mock repositories (such as 'payment-service', 'acme-corp', or mock PR #102/482) unless they are explicitly present in the live CONNECTED GITHUB REPOSITORIES list.
 
 === SYSTEM KNOWLEDGE GRAPH & LIVE DATA ===
+
+--- CONNECTED GITHUB REPOSITORIES ({len(github_conns)} accounts) ---
+{chr(10).join(github_data) if github_data else "No active GitHub connections."}
 
 --- DYNAMIC RAG RELEVANT EVIDENCE CHUNKS ---
 {rag_context}
@@ -310,7 +324,28 @@ You must ALWAYS adhere to the following professional communication standards:
         if any(k in msg for k in ["draft", "write an email", "write a message", "create ticket", "jira ticket", "slack announcement", "compose"]):
             return cls._handle_drafting_intent(msg, conflicts, ctx_conflict)
 
-        # ── 6. Source & Ingestion Queries (Slack, GitHub, Gmail, Teams, Events)
+        # ── 6a. GitHub Repositories & Connection Intent
+        if any(k in msg for k in ["github repo", "connected repo", "synced repo", "github account", "which repo", "what repo", "repositories connected", "repos connected", "list repo", "my repo"]):
+            github_conns = db.query(GitHubConnection).filter(GitHubConnection.is_active.is_(True)).all()
+            if github_conns:
+                details = []
+                for g in github_conns:
+                    repos = g.get_synced_repos()
+                    repos_str = ", ".join(f"`{r}`" for r in repos) if repos else "No repositories synced yet"
+                    details.append(
+                        f"• **GitHub Account:** `@{g.github_login}`\n"
+                        f"  - **Synced Repositories:** {repos_str}\n"
+                        f"  - **Status:** `ACTIVE` (Monitored by Company Brain OS)\n"
+                        f"  - **Last Polled:** `{g.last_polled_at or 'Ready for real-time polling'}`"
+                    )
+                return (
+                    f"🐙 **Connected GitHub Repositories & Codebase Intelligence**\n\n"
+                    + "\n\n".join(details)
+                    + "\n\n💡 *Company Brain OS continuously indexes commits, pull requests, and file trees across these repositories.*"
+                )
+            return "🐙 **No active GitHub connections found.** Connect your GitHub account under the Integrations tab to automatically sync and index repositories."
+
+        # ── 6b. Source & Ingestion Queries (Slack, GitHub, Gmail, Teams, Events)
         if any(k in msg for k in ["slack", "github", "gmail", "teams", "event", "message", "pr", "pull request", "pipeline", "ingest"]):
             return cls._handle_source_intent(msg, events)
 
