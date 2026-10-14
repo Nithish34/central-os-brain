@@ -54,6 +54,13 @@ export interface Conflict {
   risk_level?: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
   approval_matrix?: string;
   reasoning?: string;
+  dedup_hash?: string;
+  description?: string;
+  target_repo?: string;
+  target_file_path?: string;
+  recommended_diff?: string;
+  resolved_by?: string;
+  resolved_at?: string;
 }
 
 export interface RiskCheckRule {

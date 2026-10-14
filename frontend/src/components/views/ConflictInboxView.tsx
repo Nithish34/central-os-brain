@@ -42,7 +42,8 @@ interface ConflictInboxViewProps {
   health: KnowledgeHealth | null;
   activeAgentsCount: number;
   onRefreshAll: () => void;
-  onNavigateExecution: () => void;
+  onNavigateReviewed?: () => void;
+  onNavigateExecution?: () => void;
 }
 
 /**
@@ -77,6 +78,7 @@ export const ConflictInboxView: React.FC<ConflictInboxViewProps> = ({
   health,
   activeAgentsCount,
   onRefreshAll,
+  onNavigateReviewed,
   onNavigateExecution,
 }) => {
   const [selectedId, setSelectedId] = useState<string>(
@@ -114,7 +116,11 @@ export const ConflictInboxView: React.FC<ConflictInboxViewProps> = ({
       await apiService.approveConflict(selectedConflict.id);
       showToast(`✅ Confirmed — knowledge base updated.`, 'success');
       onRefreshAll();
-      onNavigateExecution();
+      if (onNavigateReviewed) {
+        onNavigateReviewed();
+      } else if (onNavigateExecution) {
+        onNavigateExecution();
+      }
     } catch (err: any) {
       showToast(`Could not confirm: ${err.message}`, 'error');
     } finally {
@@ -139,9 +145,12 @@ export const ConflictInboxView: React.FC<ConflictInboxViewProps> = ({
   const primaryEvidence = selectedConflict?.evidence?.[0];
   const secondaryEvidence = selectedConflict?.evidence?.slice(1) || [];
   const isResolved =
-    selectedConflict?.status === 'approved' || selectedConflict?.status === 'resolved';
-  const isRejected = selectedConflict?.status === 'rejected';
-  const openCount = conflicts.filter((c) => c.status === 'open').length;
+    selectedConflict?.status?.toLowerCase() === 'approved' ||
+    selectedConflict?.status?.toLowerCase() === 'resolved';
+  const isRejected =
+    selectedConflict?.status?.toLowerCase() === 'rejected' ||
+    selectedConflict?.status?.toLowerCase() === 'dismissed';
+  const openCount = conflicts.filter((c) => (c.status || '').toLowerCase() === 'open').length;
   const dateline = new Date()
     .toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })
     .toUpperCase();
@@ -157,7 +166,29 @@ export const ConflictInboxView: React.FC<ConflictInboxViewProps> = ({
           </p>
         </div>
 
-        <div className="ci-header-aside">
+        <div className="ci-header-aside" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {onNavigateReviewed && (
+            <button
+              onClick={onNavigateReviewed}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '6px 14px',
+                borderRadius: 8,
+                fontSize: 12.5,
+                fontWeight: 600,
+                cursor: 'pointer',
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid var(--border)',
+                color: 'var(--text-main)',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <CheckCircle2 size={14} color="#10b981" />
+              <span>Reviewed History</span>
+            </button>
+          )}
           <span>{dateline}</span>
         </div>
       </header>
@@ -441,6 +472,51 @@ export const ConflictInboxView: React.FC<ConflictInboxViewProps> = ({
               <h4>Suggested update</h4>
               <p>{selectedConflict.recommended_update}</p>
             </div>
+
+            {/* Unified Git Diff for Automated Remediation */}
+            {selectedConflict.recommended_diff && (
+              <div className="patch-card" style={{ marginTop: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <h4 style={{ margin: 0 }}>Automated Fix Diff (Layer 0 PR)</h4>
+                  {selectedConflict.target_file_path && (
+                    <span className="badge" style={{ fontFamily: 'monospace', fontSize: '11px' }}>
+                      {selectedConflict.target_repo ? `${selectedConflict.target_repo}:` : ''}{selectedConflict.target_file_path}
+                    </span>
+                  )}
+                </div>
+                <pre style={{
+                  background: 'var(--surface-sunken, #0f172a)',
+                  color: '#e2e8f0',
+                  padding: '12px',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  fontFamily: 'ui-monospace, monospace',
+                  overflowX: 'auto',
+                  lineHeight: '1.5',
+                  margin: 0,
+                  border: '1px solid rgba(255,255,255,0.08)'
+                }}>
+                  {selectedConflict.recommended_diff.split('\n').map((line, idx) => {
+                    let color = '#94a3b8';
+                    let bg = 'transparent';
+                    if (line.startsWith('+') && !line.startsWith('+++')) {
+                      color = '#4ade80';
+                      bg = 'rgba(74, 222, 128, 0.1)';
+                    } else if (line.startsWith('-') && !line.startsWith('---')) {
+                      color = '#f87171';
+                      bg = 'rgba(248, 113, 113, 0.1)';
+                    } else if (line.startsWith('@@') || line.startsWith('---') || line.startsWith('+++')) {
+                      color = '#38bdf8';
+                    }
+                    return (
+                      <div key={idx} style={{ color, background: bg, padding: '0 4px', borderRadius: '2px' }}>
+                        {line}
+                      </div>
+                    );
+                  })}
+                </pre>
+              </div>
+            )}
 
             {/* Why it was flagged */}
             <div className="reasoning-card">

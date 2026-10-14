@@ -13,4 +13,4 @@ build/
 *.sqlite
 *.sqlite3
 .cache/
-
+.playwright-mcp

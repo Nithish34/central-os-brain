@@ -21,10 +21,11 @@ class ActionExecutorService:
         created_at = datetime.now(timezone.utc)
         org_id = conflict.organization_id or "org-default"
 
-        # Resolve repository lineage from evidence events or affected document
-        target_repo = None
-        file_path = None
-        if conflict.evidence_ids:
+        # Resolve repository lineage from conflict model, evidence events, or affected document
+        target_repo = conflict.target_repo
+        file_path = conflict.target_file_path
+
+        if not target_repo and conflict.evidence_ids:
             for ev_id in conflict.evidence_ids:
                 ev = db.query(CompanyEvent).filter(CompanyEvent.id == ev_id).first()
                 if ev and ev.metadata_json:
@@ -43,7 +44,7 @@ class ActionExecutorService:
         remediation = GitHubRemediationService.create_remediation_pr_sync(
             conflict_id=conflict.id,
             conflict_title=conflict.title,
-            recommended_diff=conflict.recommended_update,
+            recommended_diff=conflict.recommended_diff or conflict.recommended_update,
             target_repo=target_repo,
             file_path=file_path,
             db=db,
@@ -158,6 +159,8 @@ class ActionExecutorService:
 
         if action == "approve":
             conflict.status = "approved"
+            conflict.resolved_by = reason or "System Administrator"
+            conflict.resolved_at = datetime.now(timezone.utc)
             document = db.query(Document).filter(Document.id == conflict.document_id).first()
             if document:
                 document.content = conflict.recommended_update

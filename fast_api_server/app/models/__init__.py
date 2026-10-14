@@ -2,7 +2,7 @@ from app.models.organization import Organization
 from app.models.user import User, UserRole
 from app.models.document import Document, DocumentChunk
 from app.models.event import CompanyEvent
-from app.models.conflict import Conflict
+from app.models.conflict import Conflict, ConflictEvidence
 from app.models.agent import AgentProfile
 from app.models.audit import AuditLog
 from app.models.workflow import WorkflowAction
@@ -23,6 +23,7 @@ __all__ = [
     "DocumentChunk",
     "CompanyEvent",
     "Conflict",
+    "ConflictEvidence",
     "AgentProfile",
     "AuditLog",
     "WorkflowAction",

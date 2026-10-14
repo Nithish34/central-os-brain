@@ -3,6 +3,7 @@ import { ToastProvider } from './components/ui/ToastContainer';
 import { AppShell } from './components/layout/AppShell';
 import { CommandCenterView } from './components/views/CommandCenterView';
 import { ConflictInboxView } from './components/views/ConflictInboxView';
+import { ReviewedConflictsView } from './components/views/ReviewedConflictsView';
 import { IntelligenceView } from './components/views/IntelligenceView';
 import { ExploreView } from './components/views/ExploreView';
 import { PipelineView } from './components/views/PipelineView';
@@ -244,39 +245,38 @@ export const AppContent: React.FC = () => {
             health={health}
             activeAgentsCount={agents.filter((a) => a.status === 'active').length}
             onRefreshAll={refreshAll}
-            onNavigateExecution={() => handleNavigate('execution')}
+            onNavigateReviewed={() => handleNavigate('reviewed')}
+          />
+        );
+      case 'reviewed':
+        return (
+          <ReviewedConflictsView
+            conflicts={conflicts}
+            onNavigateReview={() => handleNavigate('inbox')}
+            onRefreshAll={refreshAll}
           />
         );
       case 'explore':
         return <ExploreView memory={memory} intelStats={intelStats} />;
-      case 'intelligence':
-        // Engine Room — technical internals view (Admin/Engineer only via System nav)
-        return (
-          <IntelligenceView
-            intelStats={intelStats}
-            agents={agents}
-            memory={memory}
-          />
-        );
-      case 'operations':
-        return <OperationsView />;
-      case 'pipeline':
-        return <PipelineView pipeline={pipeline} onRefreshAll={refreshAll} />;
-      case 'execution':
-        return (
-          <ExecutionView
-            workflows={workflows}
-            onNavigateInbox={() => handleNavigate('inbox')}
-          />
-        );
-      case 'audit':
-        return <AuditView auditLogs={auditLogs} />;
       case 'integrations':
         return (
           <IntegrationsView
             integrations={integrations}
             onRefreshAll={refreshAll}
             onNavigate={handleNavigate}
+          />
+        );
+      case 'execution':
+      case 'intelligence':
+      case 'operations':
+      case 'pipeline':
+      case 'audit':
+        // Fallback for any legacy URL bookmarks to the new Reviewed Conflicts view
+        return (
+          <ReviewedConflictsView
+            conflicts={conflicts}
+            onNavigateReview={() => handleNavigate('inbox')}
+            onRefreshAll={refreshAll}
           />
         );
       case 'settings':

@@ -3294,6 +3294,9 @@ a {
   width: 100%;
   max-width: 1060px;
   margin: 0 auto;
+  perspective: 1200px;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
 }
 
 .hero-visual-stage::before {
@@ -3319,29 +3322,18 @@ a {
     0 0 0 1px rgba(255, 255, 255, 0.06),
     0 32px 80px rgba(0, 0, 0, 0.85),
     0 0 60px rgba(20, 60, 251, 0.2);
-  overflow: hidden;
-  background: #0a0d16;
-  transform: perspective(1200px) rotateX(3deg);
+  /* Safari fix: Do not set overflow: hidden here so translateZ children don't flatten */
+  overflow: visible;
+  background: radial-gradient(circle at 50% 50%, rgba(14, 20, 36, 0.95) 0%, #070911 100%);
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+  transform: perspective(1200px) rotateX(2deg);
   transform-origin: bottom center;
   transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .hero-image-wrapper:hover {
-  transform: perspective(1200px) rotateX(1deg) translateY(-4px);
-}
-
-.hero-3d-image {
-  width: 100%;
-  height: auto;
-  display: block;
-  object-fit: cover;
-}
-
-.hero-image-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, transparent 55%, rgba(7, 9, 15, 0.95) 100%);
-  pointer-events: none;
+  transform: perspective(1400px) rotateX(0deg) translateY(-2px);
 }
 
 .hud-badge {
@@ -3349,21 +3341,24 @@ a {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: rgba(10, 13, 22, 0.92);
+  background: rgba(10, 13, 22, 0.88);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: var(--radius-md);
-  padding: 9px 13px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(132, 156, 252, 0.08);
+  padding: 10px 14px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.75), 0 0 20px rgba(132, 156, 252, 0.12);
   text-align: left;
   z-index: 10;
-  transition: transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+  will-change: transform;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .hud-badge:hover {
-  transform: translateY(-3px);
-  border-color: rgba(132, 156, 252, 0.35);
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.75), 0 0 20px rgba(132, 156, 252, 0.12);
+  border-color: rgba(132, 156, 252, 0.5);
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.85), 0 0 26px rgba(132, 156, 252, 0.2);
 }
 
 .hud-badge strong {
@@ -3380,10 +3375,22 @@ a {
   color: #6b7690;
 }
 
-.hud-top-left    { top: 18px; left: 18px; }
-.hud-top-right   { top: 18px; right: 18px; }
-.hud-bottom-left { bottom: 50px; left: 18px; }
-.hud-bottom-right{ bottom: 50px; right: 18px; }
+.hud-top-left    { top: 22px; left: 22px; }
+.hud-top-right   { top: 22px; right: 22px; }
+.hud-bottom-left { bottom: 42px; left: 22px; }
+.hud-bottom-right{ bottom: 42px; right: 22px; }
+
+@media (max-width: 640px) {
+  .hud-badge {
+    padding: 7px 11px;
+    gap: 7px;
+  }
+  .hud-top-left    { top: 12px; left: 12px; }
+  .hud-top-right   { top: 12px; right: 12px; }
+  .hud-bottom-left { bottom: 18px; left: 12px; }
+  .hud-bottom-right{ bottom: 18px; right: 12px; }
+  .hud-badge span  { display: none; }
+}
 
 .hero-stats-row {
   display: flex;
@@ -4160,8 +4167,9 @@ a {
   align-items: start;
 }
 
-.arch-layer-nav { display: flex; flex-direction: column; gap: 6px; }
+.arch-layer-nav { display: flex; flex-direction: column; gap: 8px; }
 
+/* Base layer button styles (mobile / tablet fallback) */
 .arch-layer-btn {
   padding: 13px 16px 13px 20px;
   border-radius: var(--radius-md);
@@ -4199,6 +4207,113 @@ a {
 }
 
 .arch-layer-btn.active::before { background: #849cfc; }
+
+/* Desktop Isometric 3D Exploded Stack (min-width: 1024px) */
+@media (min-width: 1024px) {
+  .arch-explorer-layout {
+    grid-template-columns: 360px 1fr;
+    gap: 48px;
+    align-items: center;
+    perspective: 1400px;
+  }
+
+  .isometric-stack-stage {
+    perspective: 1400px;
+    transform-style: preserve-3d;
+    -webkit-transform-style: preserve-3d;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 0;
+    width: 100%;
+  }
+
+  .isometric-layer-plate {
+    width: 320px;
+    max-width: 100%;
+    transform-origin: center center;
+    transform: rotateX(55deg) rotateZ(-25deg) translateZ(0px);
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease, box-shadow 0.35s ease, background 0.3s ease;
+    background: rgba(14, 20, 36, 0.85);
+    border: 1px solid rgba(59, 130, 246, 0.28);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    margin-bottom: -12px;
+    border-radius: 12px;
+    cursor: pointer;
+    overflow: visible;
+    transform-style: preserve-3d;
+    -webkit-transform-style: preserve-3d;
+  }
+
+  .isometric-layer-plate:hover {
+    transform: rotateX(55deg) rotateZ(-25deg) translateZ(48px) translateY(-12px);
+    border-color: #38bdf8;
+    box-shadow: 0 24px 50px rgba(56, 189, 248, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    z-index: 25;
+  }
+
+  .isometric-layer-plate.active {
+    transform: rotateX(55deg) rotateZ(-25deg) translateZ(48px) translateY(-12px) scale(1.02);
+    border-color: #60a5fa;
+    background: rgba(22, 33, 62, 0.95);
+    box-shadow: 0 30px 60px rgba(56, 189, 248, 0.28), 0 0 24px rgba(59, 130, 246, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    z-index: 35;
+  }
+
+  .isometric-layer-plate::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    box-shadow: inset 0 0 14px rgba(132, 156, 252, 0.15);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .isometric-layer-plate.active::after {
+    opacity: 1;
+  }
+}
+
+/* Mobile & Tablet Fallback (max-width: 1023px): Reset to readable flat card stacking */
+@media (max-width: 1023px) {
+  .isometric-stack-stage {
+    perspective: none !important;
+  }
+  .isometric-layer-plate,
+  .isometric-layer-plate:hover,
+  .isometric-layer-plate.active {
+    transform: none !important;
+    margin-bottom: 8px !important;
+  }
+}
+
+/* Reduced motion accessibility fallback */
+@media (prefers-reduced-motion: reduce) {
+  .isometric-layer-plate,
+  .isometric-layer-plate:hover,
+  .isometric-layer-plate.active {
+    transform: none !important;
+    margin-bottom: 8px !important;
+  }
+}
+
+/* Tilt Card Global Utility */
+.tilt-card-wrapper {
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+  will-change: transform;
+}
+.tilt-glare-overlay {
+  pointer-events: none;
+}
+.tilt-card-content {
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+}
 
 .arch-btn-header { display: flex; align-items: center; justify-content: space-between; }
 

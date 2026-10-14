@@ -36,6 +36,10 @@ def get_conflicts(
         return cached
 
     t_db = time.perf_counter()
+    try:
+        ConflictDetectorService.run_cross_source_detection(db, current_user.organization_id)
+    except Exception as e:
+        pass
     conflicts = DataService.get_conflicts(db, status=status, organization_id=current_user.organization_id)
     enriched = [ConflictDetectorService.enrich_conflict(db, c) for c in conflicts]
     result = {"conflicts": enriched}
@@ -43,6 +47,19 @@ def get_conflicts(
 
     cache_manager.set(cache_key, result, ttl=30)
     return result
+
+
+@router.post("/detect", response_model=ConflictsListResponse, summary="Trigger real-time cross-source conflict detection")
+def trigger_conflict_detection(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    ConflictDetectorService.run_cross_source_detection(db, current_user.organization_id)
+    cache_manager.invalidate_tenant(current_user.organization_id, "conflicts")
+    conflicts = DataService.get_conflicts(db, organization_id=current_user.organization_id)
+    enriched = [ConflictDetectorService.enrich_conflict(db, c) for c in conflicts]
+    return {"conflicts": enriched}
+
 
 
 @router.get("/{conflict_id}", response_model=SingleConflictResponse, summary="Get conflict detail within organization")

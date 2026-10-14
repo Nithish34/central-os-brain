@@ -17,6 +17,8 @@ import {
   ArrowRight,
   X,
   Radio,
+  CheckCircle2,
+  BookOpen,
 } from 'lucide-react';
 import { UserProfile } from '../../types';
 
@@ -62,39 +64,18 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       action: () => { onNavigate('inbox'); onClose(); },
     },
     {
-      id: 'nav-operations',
-      title: 'Event Operations & Stream Observability',
+      id: 'nav-reviewed',
+      title: 'Reviewed Conflicts & Decision History',
       category: 'Navigation',
-      icon: <Activity size={16} color="#22d3ee" />,
-      action: () => { onNavigate('operations'); onClose(); },
+      icon: <CheckCircle2 size={16} color="#10b981" />,
+      action: () => { onNavigate('reviewed'); onClose(); },
     },
     {
-      id: 'nav-intelligence',
-      title: 'AI Agents & Memory Graph',
+      id: 'nav-explore',
+      title: 'Explore Verified Knowledge (What We Know)',
       category: 'Navigation',
-      icon: <Sparkles size={16} color="#a78bfa" />,
-      action: () => { onNavigate('intelligence'); onClose(); },
-    },
-    {
-      id: 'nav-pipeline',
-      title: 'Live Activity Stream & Stages',
-      category: 'Navigation',
-      icon: <Layers size={16} color="#c084fc" />,
-      action: () => { onNavigate('pipeline'); onClose(); },
-    },
-    {
-      id: 'nav-execution',
-      title: 'Automated Actions & Dispatched Workflows',
-      category: 'Navigation',
-      icon: <Workflow size={16} color="#f59e0b" />,
-      action: () => { onNavigate('execution'); onClose(); },
-    },
-    {
-      id: 'nav-audit',
-      title: 'Security & Immutable Audit Logs',
-      category: 'Navigation',
-      icon: <ShieldCheck size={16} color="#34d399" />,
-      action: () => { onNavigate('audit'); onClose(); },
+      icon: <BookOpen size={16} color="#38bdf8" />,
+      action: () => { onNavigate('explore'); onClose(); },
     },
     {
       id: 'nav-integrations',
@@ -109,13 +90,6 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       category: 'Navigation',
       icon: <Settings size={16} color="#94a3b8" />,
       action: () => { onNavigate('settings'); onClose(); },
-    },
-    {
-      id: 'nav-profile',
-      title: 'Team Access Roles & Identity',
-      category: 'Navigation',
-      icon: <UserCheck size={16} color="#38bdf8" />,
-      action: () => { onNavigate('profile'); onClose(); },
     },
     {
       id: 'action-auth',

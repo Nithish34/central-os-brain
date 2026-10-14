@@ -41,5 +41,13 @@ def init_db() -> None:
     try:
         with engine.begin() as conn:
             conn.execute(text("ALTER TABLE events ADD COLUMN IF NOT EXISTS metadata_json TEXT DEFAULT '{}' NOT NULL;"))
+            conn.execute(text("ALTER TABLE conflicts ADD COLUMN IF NOT EXISTS dedup_hash VARCHAR(64);"))
+            conn.execute(text("ALTER TABLE conflicts ADD COLUMN IF NOT EXISTS description TEXT;"))
+            conn.execute(text("ALTER TABLE conflicts ADD COLUMN IF NOT EXISTS target_repo VARCHAR(255);"))
+            conn.execute(text("ALTER TABLE conflicts ADD COLUMN IF NOT EXISTS target_file_path VARCHAR(500);"))
+            conn.execute(text("ALTER TABLE conflicts ADD COLUMN IF NOT EXISTS recommended_diff TEXT;"))
+            conn.execute(text("ALTER TABLE conflicts ADD COLUMN IF NOT EXISTS resolved_by VARCHAR(64);"))
+            conn.execute(text("ALTER TABLE conflicts ADD COLUMN IF NOT EXISTS resolved_at TIMESTAMP WITH TIME ZONE;"))
     except Exception:
         pass
+

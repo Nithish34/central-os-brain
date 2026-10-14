@@ -37,6 +37,8 @@ import {
   Share2,
 } from 'lucide-react';
 import { UserProfile } from '../../types';
+import { TiltCard } from './TiltCard';
+import { HolographicCore3D } from './HolographicCore3D';
 
 interface LandingPageProps {
   currentUser?: UserProfile | null;
@@ -79,6 +81,44 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser, onLaunchA
   const [simulatedResolved, setSimulatedResolved] = useState<boolean>(false);
   const [activeArchLayer, setActiveArchLayer] = useState<number>(0);
 
+  // Shockwave trigger for reactive 3D Holographic Core pulses
+  const [shockwaveTrigger, setShockwaveTrigger] = useState<number>(0);
+
+  // Hero HUD Badges Multi-Layer Parallax Refs
+  const heroStageRef = useRef<HTMLDivElement | null>(null);
+  const badgeTLRef = useRef<HTMLDivElement | null>(null);
+  const badgeTRRef = useRef<HTMLDivElement | null>(null);
+  const badgeBLRef = useRef<HTMLDivElement | null>(null);
+  const badgeBRRef = useRef<HTMLDivElement | null>(null);
+
+  // Hardware-accelerated mouse parallax on HUD telemetry badges (bypasses React render loop)
+  const handleHeroMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!heroStageRef.current) return;
+    const rect = heroStageRef.current.getBoundingClientRect();
+    const normX = (e.clientX - (rect.left + rect.width / 2)) / (rect.width / 2);
+    const normY = (e.clientY - (rect.top + rect.height / 2)) / (rect.height / 2);
+
+    if (badgeTLRef.current) {
+      badgeTLRef.current.style.transform = `translate3d(${(normX * 12).toFixed(1)}px, ${(normY * 8).toFixed(1)}px, 45px)`;
+    }
+    if (badgeTRRef.current) {
+      badgeTRRef.current.style.transform = `translate3d(${(normX * 16).toFixed(1)}px, ${(normY * 10).toFixed(1)}px, 45px)`;
+    }
+    if (badgeBLRef.current) {
+      badgeBLRef.current.style.transform = `translate3d(${(normX * 22).toFixed(1)}px, ${(normY * 16).toFixed(1)}px, 75px)`;
+    }
+    if (badgeBRRef.current) {
+      badgeBRRef.current.style.transform = `translate3d(${(normX * 26).toFixed(1)}px, ${(normY * 18).toFixed(1)}px, 75px)`;
+    }
+  };
+
+  const handleHeroMouseLeave = () => {
+    if (badgeTLRef.current) badgeTLRef.current.style.transform = 'translate3d(0, 0, 45px)';
+    if (badgeTRRef.current) badgeTRRef.current.style.transform = 'translate3d(0, 0, 45px)';
+    if (badgeBLRef.current) badgeBLRef.current.style.transform = 'translate3d(0, 0, 75px)';
+    if (badgeBRRef.current) badgeBRRef.current.style.transform = 'translate3d(0, 0, 75px)';
+  };
+
   // ROI Calculator states
   const [engineersCount, setEngineersCount] = useState<number>(65);
   const [hoursWastedPerWeek, setHoursWastedPerWeek] = useState<number>(4.5);
@@ -94,8 +134,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser, onLaunchA
   // System Architecture Blueprint Image Modal state
   const [showArchBlueprint, setShowArchBlueprint] = useState<boolean>(false);
 
-
-  // Canvas particle mesh background
+  // 3D Volumetric Particle Cloud Background
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
@@ -105,66 +144,130 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser, onLaunchA
     if (!ctx) return;
 
     let animationFrameId: number;
-    let width = (canvas.width = window.innerWidth);
-    let height = (canvas.height = window.innerHeight);
+    const isReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // High-DPI Display Scaling
+    const updateDimensions = () => {
+      const dpr = window.devicePixelRatio || 1;
+      const cssW = window.innerWidth;
+      const cssH = window.innerHeight;
+      canvas.width = cssW * dpr;
+      canvas.height = cssH * dpr;
+      ctx.resetTransform?.();
+      ctx.scale(dpr, dpr);
+      return { cssW, cssH };
+    };
+
+    let { cssW: width, cssH: height } = updateDimensions();
 
     const handleResize = () => {
       if (!canvas) return;
-      width = canvas.width = window.innerWidth;
-      height = canvas.height = window.innerHeight;
+      const dims = updateDimensions();
+      width = dims.cssW;
+      height = dims.cssH;
     };
     window.addEventListener('resize', handleResize);
 
-    // Particle nodes
-    const particleCount = Math.min(width > 768 ? 55 : 25, 60);
-    const particles: { x: number; y: number; vx: number; vy: number; radius: number; color: string }[] = [];
-    const colors = ['rgba(59, 130, 246, ', 'rgba(6, 182, 212, ', 'rgba(52, 211, 153, '];
+    // Scroll inertia tracking
+    let lastScrollY = window.scrollY;
+    let scrollVelocity = 0;
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      scrollVelocity = (currentScrollY - lastScrollY) * 0.15;
+      lastScrollY = currentScrollY;
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    // 3D Volumetric Points
+    const particleCount = Math.min(width > 768 ? 65 : 28, 75);
+    interface Particle3D {
+      x: number;
+      y: number;
+      z: number;
+      vx: number;
+      vy: number;
+      vz: number;
+      radius: number;
+      color: string;
+    }
+    const particles: Particle3D[] = [];
+    const colors = ['rgba(59, 130, 246, ', 'rgba(56, 189, 248, ', 'rgba(52, 211, 153, ', 'rgba(129, 140, 248, '];
 
     for (let i = 0; i < particleCount; i++) {
       particles.push({
-        x: Math.random() * width,
-        y: Math.random() * height,
-        vx: (Math.random() - 0.5) * 0.6,
-        vy: (Math.random() - 0.5) * 0.6,
-        radius: Math.random() * 2 + 1,
+        x: (Math.random() - 0.5) * width * 1.4,
+        y: (Math.random() - 0.5) * height * 1.4,
+        z: Math.random() * 800 - 200,
+        vx: (Math.random() - 0.5) * 0.45,
+        vy: (Math.random() - 0.5) * 0.45,
+        vz: (Math.random() - 0.5) * 0.35,
+        radius: Math.random() * 2.2 + 1,
         color: colors[Math.floor(Math.random() * colors.length)],
       });
     }
 
+    const fov = 450;
     const draw = () => {
       ctx.clearRect(0, 0, width, height);
 
-      // Draw connections
-      for (let i = 0; i < particles.length; i++) {
-        for (let j = i + 1; j < particles.length; j++) {
-          const dx = particles[i].x - particles[j].x;
-          const dy = particles[i].y - particles[j].y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
+      // Damp scroll velocity
+      scrollVelocity *= 0.92;
 
-          if (dist < 130) {
-            const alpha = (1 - dist / 130) * 0.15;
+      // Project particles to 2D
+      const projected = particles.map((p) => {
+        if (!isReducedMotion) {
+          p.x += p.vx;
+          p.y += p.vy - scrollVelocity;
+          p.z += p.vz;
+
+          // Wrap boundaries in 3D volume
+          const boundX = (width * 1.5) / 2;
+          const boundY = (height * 1.5) / 2;
+          if (p.x < -boundX) p.x = boundX;
+          if (p.x > boundX) p.x = -boundX;
+          if (p.y < -boundY) p.y = boundY;
+          if (p.y > boundY) p.y = -boundY;
+          if (p.z < -200) p.z = 600;
+          if (p.z > 600) p.z = -200;
+        }
+
+        const scale = fov / (fov + p.z);
+        const projX = p.x * scale + width / 2;
+        const projY = p.y * scale + height / 2;
+        const alpha = Math.max(0.06, Math.min(0.72, (600 - p.z) / 800));
+
+        return { p, projX, projY, scale, alpha };
+      });
+
+      // 3D Volumetric connections between close points
+      for (let i = 0; i < projected.length; i++) {
+        for (let j = i + 1; j < projected.length; j++) {
+          const p1 = projected[i];
+          const p2 = projected[j];
+          const dx = p1.p.x - p2.p.x;
+          const dy = p1.p.y - p2.p.y;
+          const dz = p1.p.z - p2.p.z;
+          const dist3D = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+          if (dist3D < 130) {
+            const lineAlpha = (1 - dist3D / 130) * Math.min(p1.alpha, p2.alpha) * 0.25;
             ctx.beginPath();
-            ctx.moveTo(particles[i].x, particles[i].y);
-            ctx.lineTo(particles[j].x, particles[j].y);
-            ctx.strokeStyle = `rgba(59, 130, 246, ${alpha})`;
-            ctx.lineWidth = 0.8;
+            ctx.moveTo(p1.projX, p1.projY);
+            ctx.lineTo(p2.projX, p2.projY);
+            ctx.strokeStyle = `rgba(96, 165, 250, ${lineAlpha.toFixed(3)})`;
+            ctx.lineWidth = 0.75 * Math.min(p1.scale, p2.scale);
             ctx.stroke();
           }
         }
       }
 
-      // Draw particles
-      for (const p of particles) {
+      // Draw volumetric glowing points
+      for (const pt of projected) {
         ctx.beginPath();
-        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fillStyle = `${p.color}0.7)`;
+        const r = Math.max(0.8, pt.p.radius * pt.scale);
+        ctx.arc(pt.projX, pt.projY, r, 0, Math.PI * 2);
+        ctx.fillStyle = `${pt.p.color}${pt.alpha.toFixed(2)})`;
         ctx.fill();
-
-        p.x += p.vx;
-        p.y += p.vy;
-
-        if (p.x < 0 || p.x > width) p.vx *= -1;
-        if (p.y < 0 || p.y > height) p.vy *= -1;
       }
 
       animationFrameId = requestAnimationFrame(draw);
@@ -174,12 +277,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser, onLaunchA
 
     return () => {
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('scroll', handleScroll);
       cancelAnimationFrame(animationFrameId);
     };
   }, []);
 
   const triggerCelebration = () => {
     setSimulatedResolved(true);
+    setShockwaveTrigger((prev) => prev + 1); // Pulse 3D Holographic Core
     confetti({
       particleCount: 80,
       spread: 70,
@@ -525,18 +630,25 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser, onLaunchA
             </div>
           </div>
 
-          {/* ── Hero Visual Stage — wider than the text content ── */}
-          <div className="hero-visual-stage anim-scale-in">
+          {/* ── Hero Visual Stage — 3D Holographic Core & Multi-Layer Parallax HUD Badges ── */}
+          <div
+            ref={heroStageRef}
+            className="hero-visual-stage anim-scale-in"
+            onMouseMove={handleHeroMouseMove}
+            onMouseLeave={handleHeroMouseLeave}
+          >
             <div className="hero-image-wrapper">
-              <img
-                src="/images/neural_brain_hero.jpg"
-                alt="Axiom OS 3D Holographic Neural Core"
-                className="hero-3d-image"
+              <HolographicCore3D
+                pulseTrigger={shockwaveTrigger}
+                activeScenarioRisk={currentScenario.risk}
               />
-              <div className="hero-image-overlay"></div>
 
-              {/* Floating Live Telemetry HUD Badges */}
-              <div className="hud-badge hud-top-left anim-fade-in">
+              {/* Floating Live Telemetry HUD Badges with Dynamic Z-Axis Parallax */}
+              <div
+                ref={badgeTLRef}
+                className="hud-badge hud-top-left anim-fade-in"
+                style={{ transform: 'translate3d(0, 0, 45px)' }}
+              >
                 <span className="pulse-dot"></span>
                 <div>
                   <strong>pgvector 1536d</strong>
@@ -544,7 +656,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser, onLaunchA
                 </div>
               </div>
 
-              <div className="hud-badge hud-top-right anim-fade-in">
+              <div
+                ref={badgeTRRef}
+                className="hud-badge hud-top-right anim-fade-in"
+                style={{ transform: 'translate3d(0, 0, 45px)' }}
+              >
                 <Shield size={14} color="#34d399" />
                 <div>
                   <strong>Layer 0 Pre-Approval</strong>
@@ -552,7 +668,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser, onLaunchA
                 </div>
               </div>
 
-              <div className="hud-badge hud-bottom-left anim-fade-in">
+              <div
+                ref={badgeBLRef}
+                className="hud-badge hud-bottom-left anim-fade-in"
+                style={{ transform: 'translate3d(0, 0, 75px)' }}
+              >
                 <Activity size={14} color="#849cfc" />
                 <div>
                   <strong>Sub-3.5s Ingestion</strong>
@@ -560,7 +680,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser, onLaunchA
                 </div>
               </div>
 
-              <div className="hud-badge hud-bottom-right anim-fade-in">
+              <div
+                ref={badgeBRRef}
+                className="hud-badge hud-bottom-right anim-fade-in"
+                style={{ transform: 'translate3d(0, 0, 75px)' }}
+              >
                 <CheckCircle2 size={14} color="#f59e0b" />
                 <div>
                   <strong>Autonomous Multi-Agent</strong>
@@ -741,6 +865,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser, onLaunchA
                 onClick={() => {
                   setSelectedScenario(idx);
                   setSimulatedResolved(false);
+                  setShockwaveTrigger((prev) => prev + 1);
                 }}
               >
                 <span className="sim-tab-icon">{sc.sourceIcon}</span>
@@ -768,108 +893,114 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser, onLaunchA
           <div className="simulator-stage-grid">
             {/* Column 1: Live Ingested Reality vs Outdated Spec */}
             <div className="sim-col sim-sources-col">
-              <div className="sim-card">
-                <div className="sim-card-header">
-                  <div className="sim-card-header-left">
-                    <MessageSquare size={15} color="#60a5fa" />
-                    <strong>Live Ingested Reality</strong>
+              <TiltCard className="sim-tilt-card">
+                <div className="sim-card">
+                  <div className="sim-card-header">
+                    <div className="sim-card-header-left">
+                      <MessageSquare size={15} color="#60a5fa" />
+                      <strong>Live Ingested Reality</strong>
+                    </div>
+                    <span className="badge badge-source">{currentScenario.source}</span>
                   </div>
-                  <span className="badge badge-source">{currentScenario.source}</span>
+                  <div className="sim-card-body">
+                    <p className="sim-event-text">"{currentScenario.sourceText}"</p>
+                    <span className="sim-timestamp">Arrived: {currentScenario.sourceTime}</span>
+                  </div>
                 </div>
-                <div className="sim-card-body">
-                  <p className="sim-event-text">"{currentScenario.sourceText}"</p>
-                  <span className="sim-timestamp">Arrived: {currentScenario.sourceTime}</span>
-                </div>
-              </div>
+              </TiltCard>
 
-              <div className="sim-card sim-card-drift">
-                <div className="sim-card-header">
-                  <div className="sim-card-header-left">
-                    <FileText size={15} color="#f87171" />
-                    <strong>Official Documentation Spec</strong>
+              <TiltCard className="sim-tilt-card">
+                <div className="sim-card sim-card-drift">
+                  <div className="sim-card-header">
+                    <div className="sim-card-header-left">
+                      <FileText size={15} color="#f87171" />
+                      <strong>Official Documentation Spec</strong>
+                    </div>
+                    <span className="badge badge-doc">{currentScenario.docLastUpdated}</span>
                   </div>
-                  <span className="badge badge-doc">{currentScenario.docLastUpdated}</span>
+                  <div className="sim-card-body">
+                    <span className="sim-doc-name">{currentScenario.docTitle}</span>
+                    <p className="sim-doc-text">"{currentScenario.docText}"</p>
+                  </div>
                 </div>
-                <div className="sim-card-body">
-                  <span className="sim-doc-name">{currentScenario.docTitle}</span>
-                  <p className="sim-doc-text">"{currentScenario.docText}"</p>
-                </div>
-              </div>
+              </TiltCard>
             </div>
 
             {/* Column 2: Cognitive Reasoning & Proposed Self-Healing Patch */}
             <div className="sim-col sim-reasoning-col">
-              <div className="sim-card sim-card-reasoning">
-                <div className="sim-card-header">
-                  <div className="sim-card-header-left">
-                    <Sparkles size={16} color="#34d399" />
-                    <strong>AI Contradiction Detection</strong>
-                  </div>
-                  <span className="badge badge-agent">{currentScenario.agent}</span>
-                </div>
-
-                <div className="sim-reasoning-metrics">
-                  <div className="sim-metric-item">
-                    <span>Contradiction Confidence</span>
-                    <strong style={{ color: '#34d399' }}>{currentScenario.confidence}%</strong>
-                  </div>
-                  <div className="sim-metric-item">
-                    <span>Risk Classification</span>
-                    <strong style={{ color: currentScenario.risk === 'CRITICAL' ? '#f87171' : '#fbbf24' }}>
-                      {currentScenario.risk}
-                    </strong>
-                  </div>
-                  <div className="sim-metric-item">
-                    <span>Governance Gate</span>
-                    <strong style={{ color: '#60a5fa' }}>Layer 0 Required</strong>
-                  </div>
-                </div>
-
-                {/* Patch Preview */}
-                <div className="sim-patch-box">
-                  <div className="sim-patch-title">
-                    <Terminal size={12} />
-                    <span>Self-Healing Knowledge Base Patch</span>
-                  </div>
-                  <div className="sim-diff-line line-del">{currentScenario.patchDiff.removed}</div>
-                  <div className="sim-diff-line line-add">{currentScenario.patchDiff.added}</div>
-                </div>
-
-                {/* Affected Downstream Systems */}
-                <div className="sim-affected-systems">
-                  <span className="sim-systems-label">Multi-System Execution Targets:</span>
-                  <div className="sim-systems-tags">
-                    {currentScenario.affectedSystems.map((sys, sIdx) => (
-                      <span key={sIdx} className="sim-system-chip">
-                        <CheckCircle2 size={11} color="#34d399" />
-                        {sys}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Interactive Action Button */}
-                <div className="sim-action-footer">
-                  {simulatedResolved ? (
-                    <div className="sim-success-alert anim-scale-in">
-                      <CheckCircle2 size={20} color="#34d399" />
-                      <div>
-                        <strong>🎉 Patch Executed &amp; Synced!</strong>
-                        <span>Knowledge base updated · Jira created · Slack notified · Immutable Audit Log #audit-sim recorded.</span>
-                      </div>
+              <TiltCard className="sim-tilt-card">
+                <div className="sim-card sim-card-reasoning">
+                  <div className="sim-card-header">
+                    <div className="sim-card-header-left">
+                      <Sparkles size={16} color="#34d399" />
+                      <strong>AI Contradiction Detection</strong>
                     </div>
-                  ) : (
-                    <button
-                      className="btn btn-primary btn-action-pulse"
-                      onClick={triggerCelebration}
-                      style={{ width: '100%', padding: '12px' }}
-                    >
-                      <Zap size={15} />
-                      <span>Simulate Layer 0 Approval &amp; Dispatch</span>
-                    </button>
-                  )}
+                    <span className="badge badge-agent">{currentScenario.agent}</span>
+                  </div>
+
+                  <div className="sim-reasoning-metrics">
+                    <div className="sim-metric-item">
+                      <span>Contradiction Confidence</span>
+                      <strong style={{ color: '#34d399' }}>{currentScenario.confidence}%</strong>
+                    </div>
+                    <div className="sim-metric-item">
+                      <span>Risk Classification</span>
+                      <strong style={{ color: currentScenario.risk === 'CRITICAL' ? '#f87171' : '#fbbf24' }}>
+                        {currentScenario.risk}
+                      </strong>
+                    </div>
+                    <div className="sim-metric-item">
+                      <span>Governance Gate</span>
+                      <strong style={{ color: '#60a5fa' }}>Layer 0 Required</strong>
+                    </div>
+                  </div>
+
+                  {/* Patch Preview */}
+                  <div className="sim-patch-box">
+                    <div className="sim-patch-title">
+                      <Terminal size={12} />
+                      <span>Self-Healing Knowledge Base Patch</span>
+                    </div>
+                    <div className="sim-diff-line line-del">{currentScenario.patchDiff.removed}</div>
+                    <div className="sim-diff-line line-add">{currentScenario.patchDiff.added}</div>
+                  </div>
+
+                  {/* Affected Downstream Systems */}
+                  <div className="sim-affected-systems">
+                    <span className="sim-systems-label">Multi-System Execution Targets:</span>
+                    <div className="sim-systems-tags">
+                      {currentScenario.affectedSystems.map((sys, sIdx) => (
+                        <span key={sIdx} className="sim-system-chip">
+                          <CheckCircle2 size={11} color="#34d399" />
+                          {sys}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Interactive Action Button */}
+                  <div className="sim-action-footer">
+                    {simulatedResolved ? (
+                      <div className="sim-success-alert anim-scale-in">
+                        <CheckCircle2 size={20} color="#34d399" />
+                        <div>
+                          <strong>🎉 Patch Executed &amp; Synced!</strong>
+                          <span>Knowledge base updated · Jira created · Slack notified · Immutable Audit Log #audit-sim recorded.</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        className="btn btn-primary btn-action-pulse"
+                        onClick={triggerCelebration}
+                        style={{ width: '100%', padding: '12px' }}
+                      >
+                        <Zap size={15} />
+                        <span>Simulate Layer 0 Approval &amp; Dispatch</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
+              </TiltCard>
             </div>
           </div>
         </div>
@@ -888,27 +1019,29 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser, onLaunchA
 
           <div className="agent-swarm-grid">
             {agentSwarm.map((agent, idx) => (
-              <div key={idx} className="agent-swarm-card">
-                <div className="agent-card-header">
-                  <div className="agent-avatar" style={{ borderColor: `${agent.color}50`, background: `${agent.color}15` }}>
-                    <span>{agent.icon}</span>
+              <TiltCard key={idx} className="agent-swarm-tilt">
+                <div className="agent-swarm-card">
+                  <div className="agent-card-header">
+                    <div className="agent-avatar" style={{ borderColor: `${agent.color}50`, background: `${agent.color}15` }}>
+                      <span>{agent.icon}</span>
+                    </div>
+                    <div>
+                      <h4>{agent.name}</h4>
+                      <span className="agent-status">
+                        <span className="pulse-dot" style={{ background: agent.color }}></span>
+                        {agent.status}
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <h4>{agent.name}</h4>
-                    <span className="agent-status">
-                      <span className="pulse-dot" style={{ background: agent.color }}></span>
-                      {agent.status}
-                    </span>
+
+                  <p className="agent-scope">{agent.scope}</p>
+
+                  <div className="agent-terminal-log">
+                    <Terminal size={11} color={agent.color} />
+                    <span>{agent.log}</span>
                   </div>
                 </div>
-
-                <p className="agent-scope">{agent.scope}</p>
-
-                <div className="agent-terminal-log">
-                  <Terminal size={11} color={agent.color} />
-                  <span>{agent.log}</span>
-                </div>
-              </div>
+              </TiltCard>
             ))}
           </div>
         </div>
@@ -926,47 +1059,51 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser, onLaunchA
           </div>
 
           <div className="bento-grid">
-            <div className="bento-card bento-problem">
-              <div className="bento-icon-box icon-red">
-                <AlertTriangle size={22} />
+            <TiltCard className="bento-tilt">
+              <div className="bento-card bento-problem">
+                <div className="bento-icon-box icon-red">
+                  <AlertTriangle size={22} />
+                </div>
+                <h3>Without Axiom OS</h3>
+                <ul className="bento-list">
+                  <li>
+                    <strong>Silent Spec Decay:</strong> Production architecture diverges from Confluence runbooks unnoticed for months.
+                  </li>
+                  <li>
+                    <strong>Tribal Knowledge in Slack:</strong> Critical decisions are buried in thread replies and never synced to source docs.
+                  </li>
+                  <li>
+                    <strong>Costly Outages &amp; Misalignment:</strong> On-call engineers follow outdated wiki steps during critical P1 incidents.
+                  </li>
+                  <li>
+                    <strong>Manual Documentation Debt:</strong> Teams waste 4+ hours per engineer every week hunting for verified truth.
+                  </li>
+                </ul>
               </div>
-              <h3>Without Axiom OS</h3>
-              <ul className="bento-list">
-                <li>
-                  <strong>Silent Spec Decay:</strong> Production architecture diverges from Confluence runbooks unnoticed for months.
-                </li>
-                <li>
-                  <strong>Tribal Knowledge in Slack:</strong> Critical decisions are buried in thread replies and never synced to source docs.
-                </li>
-                <li>
-                  <strong>Costly Outages &amp; Misalignment:</strong> On-call engineers follow outdated wiki steps during critical P1 incidents.
-                </li>
-                <li>
-                  <strong>Manual Documentation Debt:</strong> Teams waste 4+ hours per engineer every week hunting for verified truth.
-                </li>
-              </ul>
-            </div>
+            </TiltCard>
 
-            <div className="bento-card bento-solution">
-              <div className="bento-icon-box icon-green">
-                <Sparkles size={22} />
+            <TiltCard className="bento-tilt">
+              <div className="bento-card bento-solution">
+                <div className="bento-icon-box icon-green">
+                  <Sparkles size={22} />
+                </div>
+                <h3>With Axiom OS</h3>
+                <ul className="bento-list">
+                  <li>
+                    <strong>Real-Time Drift Detection:</strong> Ingests live operational streams and flags factual conflicts in under 3.5 seconds.
+                  </li>
+                  <li>
+                    <strong>Multi-Agent Domain Swarm:</strong> Engineering, SRE, and Security agents reason across hybrid RAG and Knowledge Graphs.
+                  </li>
+                  <li>
+                    <strong>Automated Self-Healing:</strong> Produces ready-to-merge doc patches and auto-syncs Jira, Slack &amp; GitHub.
+                  </li>
+                  <li>
+                    <strong>Layer 0 Risk Governance:</strong> High-risk changes require human-in-the-loop authorization with immutable audit trails.
+                  </li>
+                </ul>
               </div>
-              <h3>With Axiom OS</h3>
-              <ul className="bento-list">
-                <li>
-                  <strong>Real-Time Drift Detection:</strong> Ingests live operational streams and flags factual conflicts in under 3.5 seconds.
-                </li>
-                <li>
-                  <strong>Multi-Agent Domain Swarm:</strong> Engineering, SRE, and Security agents reason across hybrid RAG and Knowledge Graphs.
-                </li>
-                <li>
-                  <strong>Automated Self-Healing:</strong> Produces ready-to-merge doc patches and auto-syncs Jira, Slack &amp; GitHub.
-                </li>
-                <li>
-                  <strong>Layer 0 Risk Governance:</strong> High-risk changes require human-in-the-loop authorization with immutable audit trails.
-                </li>
-              </ul>
-            </div>
+            </TiltCard>
           </div>
         </div>
       </section>
@@ -983,12 +1120,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser, onLaunchA
           </div>
 
           <div className="arch-explorer-layout">
-            {/* Left Layer Navigation */}
-            <div className="arch-layer-nav">
+            {/* Left Layer Navigation - Isometric 3D Exploded Stack */}
+            <div className="arch-layer-nav isometric-stack-stage">
               {archLayers.map((layer, idx) => (
                 <button
                   key={idx}
-                  className={`arch-layer-btn ${activeArchLayer === idx ? 'active' : ''}`}
+                  className={`arch-layer-btn isometric-layer-plate ${activeArchLayer === idx ? 'active' : ''}`}
                   onClick={() => setActiveArchLayer(idx)}
                 >
                   <div className="arch-btn-header">
@@ -1006,7 +1143,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser, onLaunchA
             </div>
 
             {/* Right Layer Active Detail Display */}
-            <div className="arch-layer-detail-card">
+            <TiltCard className="arch-detail-tilt">
+              <div className="arch-layer-detail-card">
               <div className="arch-detail-header">
                 <div className="arch-detail-title-group">
                   <span
@@ -1093,7 +1231,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser, onLaunchA
                   />
                 </div>
               )}
-            </div>
+              </div>
+            </TiltCard>
           </div>
         </div>
       </section>

@@ -40,6 +40,12 @@ def list_canonical_events(
     current_user: User = Depends(require_role(UserRole.MANAGER.value)),
     db: Session = Depends(get_db),
 ):
+    cache_extra = f"{provider or 'all'}:{event_type or 'all'}:{limit}:{offset}"
+    cache_key = build_cache_key(current_user.organization_id, "canonical_events", extra=cache_extra)
+    cached = cache_manager.get(cache_key)
+    if cached is not None:
+        return cached
+
     query = db.query(CanonicalEventModel).filter(
         CanonicalEventModel.organization_id == current_user.organization_id
     )
@@ -51,7 +57,7 @@ def list_canonical_events(
     total = query.count()
     records = query.order_by(CanonicalEventModel.occurred_at.desc()).offset(offset).limit(limit).all()
 
-    return {
+    result = {
         "total": total,
         "limit": limit,
         "offset": offset,
@@ -73,6 +79,9 @@ def list_canonical_events(
         ],
     }
 
+    cache_manager.set(cache_key, result, ttl=30)
+    return result
+
 
 @router.get("/events/{event_id}", summary="Get unified lifecycle overview for a canonical event")
 def get_event_lifecycle(
@@ -80,6 +89,11 @@ def get_event_lifecycle(
     current_user: User = Depends(require_role(UserRole.MANAGER.value)),
     db: Session = Depends(get_db),
 ):
+    cache_key = build_cache_key(current_user.organization_id, "canonical_events", extra=event_id)
+    cached = cache_manager.get(cache_key)
+    if cached is not None:
+        return cached
+
     event = db.query(CanonicalEventModel).filter(
         CanonicalEventModel.id == event_id,
         CanonicalEventModel.organization_id == current_user.organization_id,
@@ -106,7 +120,7 @@ def get_event_lifecycle(
         EventDeadLetter.organization_id == current_user.organization_id,
     ).all()
 
-    return {
+    result = {
         "event_id": event.id,
         "organization_id": event.organization_id,
         "provider": event.provider,
@@ -161,6 +175,10 @@ def get_event_lifecycle(
             for d in dead_letters
         ],
     }
+
+    # Event lifecycles are largely immutable once written — cache for 2 minutes
+    cache_manager.set(cache_key, result, ttl=120)
+    return result
 
 
 @router.get("/workers", summary="Worker pool health and stream lag metrics")
@@ -239,6 +257,11 @@ def retry_dead_letter(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Dead letter record '{dlq_id}' not found.",
         )
+
+    # Retry changes worker queue state — invalidate worker metrics and event caches
+    cache_manager.invalidate_tenant(current_user.organization_id, "canonical_events")
+    cache_manager.delete(f"cb:cache:{current_user.organization_id}:worker_metrics:all")
+
     return {
         "status": "retried",
         "dlq_id": dlq_id,

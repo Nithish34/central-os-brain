@@ -18,6 +18,7 @@ const VIEW_METADATA: Record<string, { eyebrow: string; title: string }> = {
   // ── Answer Layer (plain language) ──────────────────────────────────────
   chat:         { eyebrow: 'Ask',                 title: 'Ask — Get Answers' },
   inbox:        { eyebrow: 'Needs Your Attention', title: 'Review — Needs Your Attention' },
+  reviewed:     { eyebrow: 'Decision History',    title: 'Reviewed Conflicts' },
   explore:      { eyebrow: 'Browse Knowledge',     title: 'Explore — What We Know' },
   // ── Engine Room (technical language, gated to System roles) ─────────────
   intelligence: { eyebrow: 'Autonomous Agents',   title: 'AI Agents & Memory' },

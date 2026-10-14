@@ -9,31 +9,44 @@ def utcnow():
     return datetime.now(timezone.utc)
 
 
+
 class Conflict(Base):
     __tablename__ = "conflicts"
 
     id = Column(String(64), primary_key=True, index=True)
     organization_id = Column(String(64), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
+    dedup_hash = Column(String(64), unique=True, index=True, nullable=True)  # sha256(min(id1, id2) + ":" + max(id1, id2))
+
     title = Column(String(255), nullable=False)
-    severity = Column(String(32), default="medium", nullable=False, index=True)  # critical, high, medium, low
-    domain = Column(String(128), nullable=False, index=True)
-    document_id = Column(String(64), ForeignKey("documents.id", ondelete="CASCADE"), nullable=False, index=True)
+    description = Column(Text, nullable=True, default="")
+    severity = Column(String(32), default="MEDIUM", nullable=False, index=True)  # LOW, MEDIUM, HIGH, CRITICAL
+    status = Column(String(32), default="OPEN", nullable=False, index=True)      # OPEN, RESOLVED, DISMISSED, REMEDIATING
+
+    # Lineage for automated remediation
+    target_repo = Column(String(255), nullable=True)        # e.g., "owner/repo"
+    target_file_path = Column(String(500), nullable=True)   # e.g., "README.md" or "docs/spec.md"
+    recommended_diff = Column(Text, nullable=True)          # Unified git diff
+
+    resolved_by = Column(String(64), nullable=True)
+    resolved_at = Column(DateTime(timezone=True), nullable=True)
+
+    domain = Column(String(128), default="Engineering", nullable=True, index=True)
+    document_id = Column(String(64), ForeignKey("documents.id", ondelete="CASCADE"), nullable=True, index=True)
     _evidence_ids = Column("evidence_ids", Text, default="[]", nullable=False)
-    
-    old_claim = Column(Text, nullable=False)
-    new_claim = Column(Text, nullable=False)
-    recommended_update = Column(Text, nullable=False)
-    business_impact = Column(Text, nullable=False)
-    owner = Column(String(255), nullable=False, index=True)
-    status = Column(String(32), default="open", nullable=False, index=True)  # open, approved, rejected, resolved
+
+    old_claim = Column(Text, nullable=True, default="")
+    new_claim = Column(Text, nullable=True, default="")
+    recommended_update = Column(Text, nullable=True, default="")
+    business_impact = Column(Text, nullable=True, default="")
+    owner = Column(String(255), default="Engineering", nullable=True, index=True)
 
     # Layer 2 Intelligence metrics
-    detected_by = Column(String(128), default="agent-engineering", nullable=False, index=True)
-    contradiction_score = Column(Float, default=0.85, nullable=False)
-    freshness_delta = Column(Float, default=0.4, nullable=False)
-    authority_delta = Column(Float, default=0.05, nullable=False)
-    graph_hops = Column(Integer, default=1, nullable=False)
-    risk_level = Column(String(32), default="MEDIUM", nullable=False)  # HIGH, MEDIUM, LOW
+    detected_by = Column(String(128), default="agent-engineering", nullable=True, index=True)
+    contradiction_score = Column(Float, default=0.85, nullable=True)
+    freshness_delta = Column(Float, default=0.4, nullable=True)
+    authority_delta = Column(Float, default=0.05, nullable=True)
+    graph_hops = Column(Integer, default=1, nullable=True)
+    risk_level = Column(String(32), default="MEDIUM", nullable=True)  # HIGH, MEDIUM, LOW
 
     # Layer 0 Policy & Approval Matrix (JSON)
     _approval_matrix = Column("approval_matrix", Text, default="{}", nullable=False)
@@ -42,6 +55,7 @@ class Conflict(Base):
 
     organization = relationship("Organization", back_populates="conflicts")
     document = relationship("Document", back_populates="conflicts")
+    evidences = relationship("ConflictEvidence", back_populates="conflict", cascade="all, delete-orphan")
 
     __table_args__ = (
         Index("ix_conflicts_org_status", "organization_id", "status"),
@@ -69,3 +83,20 @@ class Conflict(Base):
     @approval_matrix.setter
     def approval_matrix(self, value: dict) -> None:
         self._approval_matrix = json.dumps(value)
+
+
+class ConflictEvidence(Base):
+    __tablename__ = "conflict_evidences"
+
+    id = Column(String(64), primary_key=True)
+    conflict_id = Column(String(64), ForeignKey("conflicts.id", ondelete="CASCADE"), index=True)
+    event_id = Column(String(64), ForeignKey("events.id", ondelete="SET NULL"), nullable=True)
+
+    source = Column(String(64), nullable=False)  # "Slack", "GitHub", "Notion"
+    content_excerpt = Column(Text, nullable=False)
+    author = Column(String(255), nullable=True)
+    authority_score = Column(Float, default=0.5)
+    timestamp = Column(String(64), nullable=True)
+
+    conflict = relationship("Conflict", back_populates="evidences")
+

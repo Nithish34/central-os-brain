@@ -3,16 +3,9 @@ import {
   MessageSquare,
   Bell,
   BookOpen,
-  Activity,
-  Layers,
-  Workflow,
-  ShieldCheck,
+  CheckCircle2,
   Plug,
   Settings,
-  UserCheck,
-  ChevronDown,
-  ChevronRight,
-  Cpu,
   HelpCircle,
   Sun,
   Moon,
@@ -32,22 +25,6 @@ interface AppShellProps {
   onOpenAuth?: () => void;
   children: React.ReactNode;
 }
-
-/**
- * Roles that can access the System / Engine Room nav group.
- */
-const SYSTEM_ROLES = new Set(['owner', 'admin', 'manager', 'engineer', 'compliance', 'devops']);
-
-function hasSystemAccess(user: UserProfile | null | undefined): boolean {
-  if (!user) return false;
-  const role = (user.role || '').toLowerCase();
-  return SYSTEM_ROLES.has(role);
-}
-
-const SYSTEM_VIEW_IDS = [
-  'intelligence', 'operations', 'pipeline', 'execution',
-  'audit', 'profile',
-];
 
 export const AppShell: React.FC<AppShellProps> = ({
   currentView,
@@ -71,17 +48,6 @@ export const AppShell: React.FC<AppShellProps> = ({
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('cbos_theme', theme);
   }, [theme]);
-
-  const canSeeSystem = hasSystemAccess(currentUser);
-
-  // System group: start closed or open if viewing system item
-  const [systemGroupOpen, setSystemGroupOpen] = useState(() => false);
-
-  useEffect(() => {
-    if (SYSTEM_VIEW_IDS.includes(currentView) && canSeeSystem) {
-      setSystemGroupOpen(true);
-    }
-  }, [currentView, canSeeSystem]);
 
   // Global Cmd+K / Ctrl+K listener
   useEffect(() => {
@@ -115,6 +81,13 @@ export const AppShell: React.FC<AppShellProps> = ({
         ) : null,
     },
     {
+      id: 'reviewed',
+      label: 'Reviewed',
+      sublabel: 'Decisions & History',
+      icon: <CheckCircle2 size={16} />,
+      badge: null as React.ReactNode,
+    },
+    {
       id: 'explore',
       label: 'Explore',
       sublabel: 'What We Know',
@@ -144,52 +117,6 @@ export const AppShell: React.FC<AppShellProps> = ({
       label: 'Help & Docs',
       sublabel: null,
       icon: <HelpCircle size={15} />,
-      badge: null as React.ReactNode,
-    },
-  ];
-
-  /** ── System (Engine Room) nav items — role-gated ── */
-  const systemItems = [
-    {
-      id: 'intelligence',
-      label: 'AI Agents & Memory',
-      sublabel: null as string | null,
-      icon: <Cpu size={15} />,
-      badge: null as React.ReactNode,
-    },
-    {
-      id: 'operations',
-      label: 'Event Operations',
-      sublabel: null as string | null,
-      icon: <Activity size={15} />,
-      badge: null as React.ReactNode,
-    },
-    {
-      id: 'pipeline',
-      label: 'Live Stream',
-      sublabel: null as string | null,
-      icon: <Layers size={15} />,
-      badge: null as React.ReactNode,
-    },
-    {
-      id: 'execution',
-      label: 'Automated Actions',
-      sublabel: null as string | null,
-      icon: <Workflow size={15} />,
-      badge: null as React.ReactNode,
-    },
-    {
-      id: 'audit',
-      label: 'Security & Logs',
-      sublabel: null as string | null,
-      icon: <ShieldCheck size={15} />,
-      badge: null as React.ReactNode,
-    },
-    {
-      id: 'profile',
-      label: 'Team & Access',
-      sublabel: null as string | null,
-      icon: <UserCheck size={15} />,
       badge: null as React.ReactNode,
     },
   ];
@@ -282,44 +209,6 @@ export const AppShell: React.FC<AppShellProps> = ({
               </button>
             ))}
           </div>
-
-          {/* ── System group (role-gated) ── */}
-          {canSeeSystem && (
-            <div className="sidebar-system-group">
-              <button
-                className="sidebar-system-toggle"
-                onClick={() => setSystemGroupOpen((prev) => !prev)}
-                aria-expanded={systemGroupOpen}
-              >
-                <span className="nav-group-label">System / Advanced</span>
-                {systemGroupOpen
-                  ? <ChevronDown size={12} className="sidebar-toggle-chevron" />
-                  : <ChevronRight size={12} className="sidebar-toggle-chevron" />
-                }
-              </button>
-
-              {systemGroupOpen && (
-                <div className="sidebar-system-items anim-fade-in">
-                  {systemItems.map((item) => (
-                    <button
-                      key={item.id}
-                      className={`sidebar-nav-btn sidebar-nav-btn--system ${currentView === item.id ? 'active' : ''}`}
-                      onClick={() => handleLinkClick(item.id)}
-                    >
-                      <span className="sidebar-nav-icon">{item.icon}</span>
-                      <span className="sidebar-nav-text">
-                        <span className="sidebar-nav-label">{item.label}</span>
-                        {item.sublabel && (
-                          <span className="sidebar-nav-sublabel">{item.sublabel}</span>
-                        )}
-                      </span>
-                      {item.badge}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
         </div>
 
         {/* Footer — Theme Toggle + user card */}
